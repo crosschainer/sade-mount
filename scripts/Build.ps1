@@ -66,7 +66,14 @@ foreach ($name in @('README.md', 'THIRD-PARTY-NOTICES.md')) {
 }
 $documentationSource = Join-Path $repoRoot 'docs'
 if (Test-Path -LiteralPath $documentationSource -PathType Container) {
-    Copy-Item -LiteralPath $documentationSource -Destination (Join-Path $packageRoot 'docs') -Recurse -Force
+    # Showcase recordings are linked from GitHub; they are not needed to install the mount.
+    foreach ($file in Get-ChildItem -LiteralPath $documentationSource -File -Recurse) {
+        $relative = [IO.Path]::GetRelativePath($documentationSource, $file.FullName)
+        if ($relative.Replace('\', '/').StartsWith('videos/', [StringComparison]::OrdinalIgnoreCase)) { continue }
+        $destination = Assert-SadeChildPath (Join-Path $packageRoot "docs\$relative") $packageRoot
+        New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
+        Copy-Item -LiteralPath $file.FullName -Destination $destination -Force
+    }
 }
 & (Join-Path $PSScriptRoot 'Write-ThirdPartyInventory.ps1') -Destination (Join-Path $packageRoot 'third-party')
 $converterNotices = Join-Path $packageRoot 'third-party\CUE4Parse-vendored-animation'

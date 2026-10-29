@@ -10,6 +10,8 @@ Copyright (c) 2026 FabianFG. The Apache License, Version 2.0 is included in `Thi
 
 The reader also brings transitive packages for parsing, compression, cryptography, textures, and audio. `scripts/Write-ThirdPartyInventory.ps1` reads the actual NuGet restore manifest and records every restored package/version, declared license, and source/project URL in the built package's `third-party/packages.json`. It copies each package's NuGet metadata and included LICENSE, NOTICE, or COPYING files into that directory. This inventory follows the resolved dependency versions instead of a manually maintained list.
 
+For packages that omit their license text from NuGet, `ThirdParty/package-licenses.json` records the matching upstream revision and license file. The inventory copies those supplemental texts alongside each package's metadata and records their sources.
+
 ## s&box
 
 The project builds against your installed s&box version. The build/install scripts do not redistribute engine assemblies. API references were checked against a local copy of the s&box source and API docs. The engine and its assets remain subject to their own licenses.

@@ -1,0 +1,84 @@
+[
+  {
+    "Packages": [
+      "OggVorbisEncoder/1.2.2"
+    ],
+    "File": "OggVorbisEncoder-1.2.2.LICENSE.txt",
+    "SourceUrl": "https://github.com/SteveLillis/.NET-Ogg-Vorbis-Encoder/blob/39b951974a5b4c07dc7daac9b107c0fb16811d5f/LICENSE",
+    "RevisionEvidence": "Upstream commit 39b951974a5b4c07dc7daac9b107c0fb16811d5f sets OggVorbisEncoder.csproj Version=1.2.2; NuGet metadata has no source revision or release tag."
+  },
+  {
+    "Packages": [
+      "MemoryPack/1.21.4",
+      "MemoryPack.Core/1.21.4",
+      "MemoryPack.Generator/1.21.4"
+    ],
+    "File": "MemoryPack-1.21.4.LICENSE.txt",
+    "SourceUrl": "https://github.com/Cysharp/MemoryPack/blob/0f2fe0827907940768293b7bb81b9605a7d8cba8/LICENSE.md",
+    "RevisionEvidence": "NuGet repository commit; also upstream tag 1.21.4."
+  },
+  {
+    "Packages": [
+      "OodleSharp/0.0.1"
+    ],
+    "File": "OodleSharp-0.0.1.LICENSE.txt",
+    "SourceUrl": "https://github.com/NotOfficer/OodleSharp/blob/716d8b9ce3bd74ece37097d2b5e5ef67ef0c48c5/LICENSE",
+    "RevisionEvidence": "NuGet repository commit. The upstream license says Marlon; preserved unchanged rather than substituting NuGet author metadata."
+  },
+  {
+    "Packages": [
+      "IndexRange/1.1.0"
+    ],
+    "File": "IndexRange-1.1.0.LICENSE.txt",
+    "SourceUrl": "https://github.com/bgrainger/IndexRange/blob/0ee6e541467a6d6519af8d8adfe1edad748fc8a2/LICENSE",
+    "RevisionEvidence": "NuGet repository commit; preserves the original copyright year range in that LICENSE."
+  },
+  {
+    "Packages": [
+      "K4os.Hash.xxHash/1.0.8"
+    ],
+    "File": "K4os.Hash.xxHash-1.0.8.LICENSE.txt",
+    "SourceUrl": "https://github.com/MiloszKrajewski/K4os.Hash.xxHash/blob/c36ef54edbd778c082cab04df7e42cb72a22d887/LICENSE",
+    "RevisionEvidence": "Upstream tag 1.0.8 resolves to c36ef54edbd778c082cab04df7e42cb72a22d887."
+  },
+  {
+    "Packages": [
+      "NAudio.Core/2.2.1"
+    ],
+    "File": "NAudio-2.2.1.LICENSE.txt",
+    "SourceUrl": "https://github.com/naudio/NAudio/blob/b5d5ff83fd378f046398891fe5cd99426ce44732/license.txt",
+    "RevisionEvidence": "Upstream tag v2.2.1 resolves to b5d5ff83fd378f046398891fe5cd99426ce44732."
+  },
+  {
+    "Packages": [
+      "Serilog.Sinks.Console/6.1.1"
+    ],
+    "File": "Serilog.Sinks.Console-6.1.1.LICENSE.txt",
+    "SourceUrl": "https://github.com/serilog/serilog-sinks-console/blob/b3cb1f042f5636161b831fa8816d70d865a5eec4/LICENSE",
+    "RevisionEvidence": "NuGet repository commit."
+  },
+  {
+    "Packages": [
+      "Microsoft.Bcl.Memory/10.0.14"
+    ],
+    "File": "Dotnet-MIT.LICENSE.txt",
+    "SourceUrl": "https://github.com/dotnet/dotnet/blob/0427b9abbead3fa64c6655eb4290c537397131fa/LICENSE.TXT",
+    "RevisionEvidence": "NuGet repository commit. Same license text as the other two pinned dotnet packages in this manifest."
+  },
+  {
+    "Packages": [
+      "System.IO.Hashing/10.0.8"
+    ],
+    "File": "Dotnet-MIT.LICENSE.txt",
+    "SourceUrl": "https://github.com/dotnet/dotnet/blob/94ea82652cdd4e0f8046b5bd5becbd11461482ca/LICENSE.TXT",
+    "RevisionEvidence": "NuGet repository commit; license text verified identical to Dotnet-MIT.LICENSE.txt."
+  },
+  {
+    "Packages": [
+      "System.Numerics.Tensors/10.0.10"
+    ],
+    "File": "Dotnet-MIT.LICENSE.txt",
+    "SourceUrl": "https://github.com/dotnet/dotnet/blob/f7d90799ce4ef09a0bb257852a57248d2a8fb8dd/LICENSE.TXT",
+    "RevisionEvidence": "NuGet repository commit; license text verified identical to Dotnet-MIT.LICENSE.txt."
+  }
+]
