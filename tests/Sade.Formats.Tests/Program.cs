@@ -82,6 +82,10 @@ static void TestChunkAnomalies()
     NearVector(keys[1].Position!.Value, keys[0].Position!.Value);
     Near(keys[1].Time, 1.5f);
     Equal(diagnostics.Count, 1);
+    diagnostics.Clear();
+    Equal(ColParser.Parse([.. Collision("COL2"), 1, 2, 3], "truncated-tail", diagnostics.Add, skipInvalidRecords: true).Count, 1);
+    Equal(diagnostics.Count, 1);
+    Throws<InvalidDataException>(() => ColParser.Parse([.. Collision("COL2"), 1, 2, 3]));
     data = Chunked();
     BitConverter.GetBytes(1.5f).CopyTo(data, offset + 40);
     BitConverter.GetBytes(0f).CopyTo(data, terminal + 40);
@@ -160,7 +164,7 @@ static void TestBinding()
     var model = Model();
     var clip = AnimationBinder.Bind(bank, model).Single();
     Near((clip.Frames.Length - 1) / clip.FrameRate, 80f / 60);
-    NearVector(clip.Frames[^1][0].Position, new Vector3(110, -180, 80));
+    NearVector(clip.Frames[^1][0].Position, new Vector3(210, 120, 80));
     NearVector(clip.Frames[0][1].Position, model.Bones[1].LocalBind.Position);
     Near(clip.RootSpeed, MathF.Sqrt(100 * 100 + 200 * 200) / (80f / 60));
     var stationary = AnimationBinder.Bind(bank, model, true).Single();
@@ -171,6 +175,17 @@ static void TestBinding()
     Equal(AnimationBinder.Bind(bank, model, clips: []).Length, 0);
     var constant = bank.Clips[0] with { Duration = 0, Tracks = [bank.Clips[0].Tracks[0] with { Keys = [bank.Clips[0].Tracks[0].Keys[0]] }] };
     Equal(AnimationBinder.Bind(bank with { Clips = [constant] }, model).Single().Frames.Length, 1);
+    // A classic pedestrian walking +Y with a +90-degree root must face and travel +X in DE.
+    var heading = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, MathF.PI / 2);
+    var forward = bank.Clips[0] with { Duration = 1, Tracks = [new AnimationTrack("Root", 0,
+        [new AnimationKey(0, heading, Vector3.Zero), new AnimationKey(1, heading, new Vector3(0, 2, 0))])] };
+    var converted = AnimationBinder.Bind(bank with { Clips = [forward] }, model).Single();
+    NearVector(converted.Frames[^1][0].Position - converted.Frames[0][0].Position, new Vector3(200, 0, 0));
+    NearVector(Vector3.Transform(Vector3.UnitX, converted.Frames[0][0].Rotation), Vector3.UnitX);
+    // Props have no pedestrian Pelvis and keep their original animation coordinate convention.
+    var prop = model with { Bones = [model.Bones[0]] };
+    var propClip = AnimationBinder.Bind(bank with { Clips = [forward] }, prop).Single();
+    NearVector(propClip.Frames[^1][0].Position - propClip.Frames[0][0].Position, new Vector3(0, -200, 0));
 }
 static void TestBadBinding()
 {

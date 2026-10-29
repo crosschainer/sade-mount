@@ -16,8 +16,18 @@ public static class ColParser
         {
             if (input.Data[input.Position..].IndexOfAnyExcept((byte)0) < 0) break;
             var start = input.Position;
+            if (skipInvalidRecords && input.Remaining < 8)
+            {
+                report?.Invoke(new Diagnostic(source, $"Stopped at truncated collision header at byte {start}; retained {result.Count} earlier records.", true));
+                break;
+            }
             var magic = input.Text(4);
-            if (magic is not ("COLL" or "COL2" or "COL3")) throw new InvalidDataException($"Unknown collision record '{magic}' at byte {start}.");
+            if (magic is not ("COLL" or "COL2" or "COL3"))
+            {
+                if (!skipInvalidRecords) throw new InvalidDataException($"Unknown collision record '{magic}' at byte {start}.");
+                report?.Invoke(new Diagnostic(source, $"Stopped at unknown collision record '{magic}' at byte {start}; retained {result.Count} earlier records.", true));
+                break;
+            }
             var length = input.UInt32();
             if (length < 64 || length > input.Remaining) throw new InvalidDataException("Collision record size exceeds its archive.");
             input.Skip((int)length);

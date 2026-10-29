@@ -24,6 +24,8 @@ public interface IGameReader : IDisposable
     AnimationBankData LoadAnimationBank(string id);
     AnimationClipData[] LoadAnimations(string id, ModelData model, bool inPlace = false, string[]? clips = null);
     PedestrianPreset? GetPedestrianPreset(string modelId);
+    IReadOnlyList<WeaponData> GetWeapons();
+    IReadOnlyList<VehicleData> GetVehicles();
     string Fingerprint { get; }
 }
 
@@ -89,4 +91,49 @@ public sealed record RawAnimationClip(string Name, AnimationTrack[] Tracks, floa
 public sealed record AnimationBankData(string Id, RawAnimationClip[] Clips);
 /// <summary>Uniformly sampled parent-local bone frames, in the same axes/units as ModelData. Frames include both endpoints.</summary>
 public sealed record AnimationClipData(string Name, float FrameRate, TransformData[][] Frames, bool Looping = true, bool Additive = false, float RootSpeed = 0);
-public sealed record PedestrianPreset(string Name, string BankId, string Idle, string Walk, string Run, string Group);
+public sealed record PedestrianPreset(string Name, string BankId, string Idle, string Walk, string Run, string Group)
+{
+    public string Faction { get; init; } = "Civilian";
+    public string[] EnemyFactions { get; init; } = [];
+}
+
+/// <summary>Installed weapon.dat standard-skill profile. Distances/offsets use Unreal centimeters; timing is seconds.</summary>
+public sealed record WeaponData(string Id, string Name, string ModelId, string FireSoundId, string? ReloadSoundId,
+    string AnimationBankId, string FireClip, string ReloadClip, float RangeCentimeters, float Damage,
+    int ClipSize, float ShotsPerSecond, float ReloadSeconds, Vector3 MuzzleOffset, string WeaponBone = "R_Hand")
+{
+    public string? AimClip { get; init; }
+    public float FirePitch { get; init; } = 1;
+    public string? ReloadFinishSoundId { get; init; }
+    public float ReloadSoundTime { get; init; }
+    public float ReloadFinishSoundTime { get; init; }
+    public float FireLoopStart { get; init; }
+    public float FireLoopEnd { get; init; }
+    public float FireTime { get; init; }
+    public float Accuracy { get; init; } = 1;
+    public string Kind { get; init; } = "hitscan";
+    public string SourceName { get; init; } = "";
+    public int ModelNumber { get; init; }
+    public int Slot { get; init; }
+    public bool CombatEnabled { get; init; } = true;
+    public int PelletCount { get; init; } = 1;
+    public float SpreadDegrees { get; init; }
+    public float ProjectileSpeedCentimeters { get; init; }
+    public float ProjectileGravityCentimeters { get; init; }
+    public float FuseSeconds { get; init; }
+    public float BlastRadiusCentimeters { get; init; }
+    public float EffectSeconds { get; init; }
+    public string? ProjectileModelId { get; init; }
+    public string? ImpactSoundId { get; init; }
+    public string? ExplosionSoundId { get; init; }
+    public bool LoopingFireSound { get; init; }
+    public string? FireStartSoundId { get; init; }
+    public string? FireStopSoundId { get; init; }
+    public string[] AdditionalAnimationClips { get; init; } = [];
+    public MeleeAttackData[] MeleeAttacks { get; init; } = [];
+    public string? Notes { get; init; }
+}
+
+/// <summary>One installed melee.dat attack. Frame times are converted from 30Hz to seconds.</summary>
+public sealed record MeleeAttackData(string Name, string Clip, float HitTime, float ChainTime,
+    float Damage, float RadiusCentimeters, string HitLevel);

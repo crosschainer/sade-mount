@@ -70,6 +70,11 @@ public static class AnimationBinder
         if ((long)(intervals + 1) * model.Bones.Length > 20_000_000) throw new InvalidDataException("Animation exceeds the pose sampling budget.");
         var frames = new TransformData[intervals + 1][];
         var rootIndex = Array.FindIndex(model.Bones, b => b.Parent == -1);
+        // Classic pedestrian IFPs use +Y forward and carry a quarter-turn in their root pose.
+        // DE's pedestrian reference meshes face +X. Convert the entire root trajectory together,
+        // retaining heading changes inside the animation rather than flattening every root yaw.
+        var rootBasis = names.ContainsKey("Root") && names.ContainsKey("Pelvis")
+            ? Quaternion.CreateFromAxisAngle(Vector3.UnitZ, MathF.PI / 2) : Quaternion.Identity;
         var rootSpeed = 0f;
         Vector3? rootStart = null;
         if (assignments.TryGetValue(rootIndex, out var rootTrack))
@@ -78,7 +83,7 @@ public static class AnimationBinder
             var last = Sample(rootTrack.Keys, clip.Duration);
             if (first.Position is { } from && last.Position is { } to)
             {
-                rootStart = GtaCoordinates.ToUnreal(from);
+                rootStart = Vector3.Transform(GtaCoordinates.ToUnreal(from), rootBasis);
                 var delta = GtaCoordinates.ToUnreal(to - from);
                 rootSpeed = clip.Duration > 0 ? new Vector2(delta.X, delta.Y).Length() / clip.Duration : 0;
             }
@@ -92,7 +97,13 @@ public static class AnimationBinder
                 var key = Sample(track.Keys, time);
                 var bind = model.Bones[boneIndex].LocalBind;
                 var rotation = GtaCoordinates.ToUnreal(key.Rotation);
-                var position = key.Position is { } source ? bind.Position + GtaCoordinates.ToUnreal(source) : bind.Position;
+                var translation = key.Position is { } source ? GtaCoordinates.ToUnreal(source) : Vector3.Zero;
+                if (boneIndex == rootIndex)
+                {
+                    rotation = Quaternion.Normalize(rootBasis * rotation);
+                    translation = Vector3.Transform(translation, rootBasis);
+                }
+                var position = bind.Position + translation;
                 if (inPlace && boneIndex == rootIndex && rootStart is { } start)
                     position = new Vector3(bind.Position.X + start.X, bind.Position.Y + start.Y, position.Z);
                 if (f > 0 && Quaternion.Dot(frames[f - 1][boneIndex].Rotation, rotation) < 0) rotation = Quaternion.Negate(rotation);

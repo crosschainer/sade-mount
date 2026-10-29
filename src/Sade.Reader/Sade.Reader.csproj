@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Sade.Reader</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Sade.Contracts/Sade.Contracts.csproj" />
+    <ProjectReference Include="../Sade.Formats/Sade.Formats.csproj" />
+    <PackageReference Include="CUE4Parse" Version="1.2.2.202610" />
+    <PackageReference Include="Microsoft.Bcl.Memory" Version="10.0.14" />
+  </ItemGroup>
+</Project>
