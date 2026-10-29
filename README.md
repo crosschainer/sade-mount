@@ -15,6 +15,8 @@ You need s&box and GTA San Andreas — The Definitive Edition installed through 
 
 To find the s&box folder, right-click it in Steam and choose **Manage → Browse local files**. The mount finds your GTA installation automatically.
 
+![GTA San Andreas — The Definitive Edition enabled in s&box's Mounts menu](docs/images/mount-activation.png)
+
 When updating, close s&box and replace the `sade` folder with the new release. Keep `sade.json` if you have customized it. No SDK or build tools are needed to use a release.
 
 [Release notes and downloads](https://github.com/crosschainer/sade-mount/releases/tag/v0.1)
