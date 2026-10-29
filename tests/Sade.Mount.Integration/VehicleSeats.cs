@@ -1,5 +1,6 @@
 // Trusted run_csharp integration script. Requires the current mount and an offline editor.
-// Exercises real engine chair/movement behavior in an isolated scene, without changing the active camera.
+// Exercises door-side selection and real engine chairs in an isolated scene, without changing the active camera.
+// Selection uses the same helper as the E key; this fixture does not inject keyboard input.
 var offline = !Networking.IsActive;
 var assembly = AppDomain.CurrentDomain.GetAssemblies().Single(a => a.GetName().Name == "sade");
 var seating = assembly.GetType("Sade.Mount.VehicleSeats")!;
@@ -9,11 +10,13 @@ var members = System.Reflection.BindingFlags.Instance | System.Reflection.Bindin
 var statics = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
 var enter = seating.GetMethod("EnterSeat", statics) ?? throw new Exception("Install the current mount: offline EnterSeat helper is missing.");
 var leave = seating.GetMethod("LeaveSeat", statics)!;
+var findEntry = seating.GetMethod("FindEntry", statics) ?? throw new Exception("Install the current mount: door-based entry selection is missing.");
 var profiles = runtime.GetField("profiles", statics)!.GetValue(null)!;
 var activeScene = Game.ActiveScene;
 var activeCamera = activeScene?.Camera;
 var scene = new Scene();
 Component? native = null;
+Component? bikeNative = null;
 using (scene.Push())
 try
 {
@@ -32,15 +35,31 @@ try
     var create = car.Components.GetType().GetMethods().Single(m => m.Name == "Create" && m.IsGenericMethodDefinition);
     native = (Component)create.MakeGenericMethod(nativeType).Invoke(car.Components, [false])!;
     nativeType.GetMethod("Initialize", members)!.Invoke(native, [profile, body, renderer]);
+    native.Enabled = true;
     body.MotionEnabled = false;
     var driverSeat = car.GetComponentsInChildren<BaseChair>().Single(c => c.GameObject.Tags.Has("sade_vehicle_driver", false));
     var passengerSeat = car.GetComponentsInChildren<BaseChair>().First(c => c.GameObject.Tags.Has("sade_vehicle_passenger", false));
     var driver = CreatePlayer("Seat regression driver", new Vector3(-140, 0, 3));
     var passenger = CreatePlayer("Seat regression passenger", new Vector3(140, 0, 3));
     Step(3);
+    var driverDoor = Entrances(car, driverSeat).Single();
+    var passengerDoor = Entrances(car, passengerSeat).Single();
+    if (SelectAt(driverDoor.WorldPosition) != driverSeat || SelectAt(passengerDoor.WorldPosition) != passengerSeat)
+        throw new Exception("Door proximity did not choose left driver / right passenger.");
+    car.WorldRotation = Rotation.FromYaw(73);
+    if (SelectAt(driverDoor.WorldPosition) != driverSeat || SelectAt(passengerDoor.WorldPosition) != passengerSeat)
+        throw new Exception("Seat selection used world axes instead of the rotated vehicle's door sides.");
+    if (SelectAt(car.WorldPosition + Vector3.Up * 1000) is not null)
+        throw new Exception("Seat selection ignored the entry distance limit.");
+    car.WorldRotation = Rotation.Identity;
     if (!Enter(driverSeat, driver)) throw new Exception("Driver entry rejected.");
     Step(20);
     CheckSeated(driver, driverSeat);
+    var occupiedDriverChoice = SelectAt(driverDoor.WorldPosition);
+    if (occupiedDriverChoice == driverSeat || occupiedDriverChoice is not null && occupiedDriverChoice.GameObject.LocalPosition.x > 1)
+        throw new Exception("An occupied left door selected the occupied driver or an opposite-side passenger.");
+    if (SelectAt(passengerDoor.WorldPosition) != passengerSeat)
+        throw new Exception("An occupied driver seat prevented right-door passenger entry.");
     if (Enter(driverSeat, passenger)) throw new Exception("Occupied driver seat was stolen.");
     if (!Enter(passengerSeat, passenger)) throw new Exception("Passenger entry rejected.");
     Step(20);
@@ -72,8 +91,34 @@ try
     }
     if (nativeType.GetProperty("Driver", members)!.GetValue(native) is not null) throw new Exception("Driver retained after leaving.");
     if (!driverSeat.CanPress(new Component.IPressable.Event(passenger))) throw new Exception("Vacated driver seat remains unavailable.");
+
+    var bikePath = "mount://sade/vehicles/bike/nrg500.prefab";
+    if (PrefabFile.Load(bikePath) is null) throw new Exception("Mounted NRG500 prefab is unavailable.");
+    var bike = GameObject.Clone(bikePath);
+    bike.WorldPosition = new Vector3(500, 0, 28);
+    bike.WorldRotation = Rotation.FromYaw(-41);
+    var bikeBody = bike.GetComponent<Rigidbody>();
+    var bikeRenderer = bike.GetComponent<SkinnedModelRenderer>();
+    var bikeProfile = profiles.GetType().GetProperty("Item")!.GetValue(profiles, [bikeRenderer.Model.Name])!;
+    var bikeCreate = bike.Components.GetType().GetMethods().Single(m => m.Name == "Create" && m.IsGenericMethodDefinition);
+    bikeNative = (Component)bikeCreate.MakeGenericMethod(nativeType).Invoke(bike.Components, [false])!;
+    nativeType.GetMethod("Initialize", members)!.Invoke(bikeNative, [bikeProfile, bikeBody, bikeRenderer]);
+    bikeNative.Enabled = true;
+    bikeBody.MotionEnabled = false;
+    var riderSeat = bike.GetComponentsInChildren<BaseChair>().Single(c => c.GameObject.Tags.Has("sade_vehicle_driver", false));
+    var pillionSeat = bike.GetComponentsInChildren<BaseChair>().Single(c => c.GameObject.Tags.Has("sade_vehicle_passenger", false));
+    foreach (var chair in new[] { riderSeat, pillionSeat })
+    {
+        var entrances = Entrances(bike, chair);
+        if (entrances.Length != 2) throw new Exception("A bike saddle must be accessible from both sides.");
+        foreach (var entrance in entrances)
+            if (SelectAt(entrance.WorldPosition) != chair) throw new Exception("Bike front/rear proximity selected the wrong saddle.");
+    }
+    if (!Enter(riderSeat, driver)) throw new Exception("Bike rider entry rejected.");
+    foreach (var entrance in Entrances(bike, riderSeat))
+        if (SelectAt(entrance.WorldPosition) != pillionSeat) throw new Exception("An occupied bike rider seat did not leave the nearby pillion available.");
     if (activeScene?.Camera != activeCamera) throw new Exception("Seat test changed the active scene camera.");
-    return new { Passed = true, occupiedState, Exits = exits,
+    return new { Passed = true, occupiedState, Exits = exits, DoorSelection = "Left/right, rotated vehicle, occupied side, distance limit, and both-side bike rider/pillion selection.",
         Scope = offline ? "Offline native entry/exit and engine sitting." : "Isolated engine Sit/Eject and clearance; live network RPC/ownership is not tested." };
 
     bool Enter(BaseChair chair, PlayerController player)
@@ -85,6 +130,19 @@ try
         if (!player.GetComponent<Sandbox.Movement.SitMoveMode>().IsValid()) player.Components.Create<Sandbox.Movement.SitMoveMode>();
         chair.Sit(player);
         return true;
+    }
+
+    BaseChair? SelectAt(Vector3 point)
+    {
+        var entry = findEntry.Invoke(null, [scene, point]);
+        if (entry is null) return null;
+        var seat = entry.GetType().GetProperty("Seat", members)!.GetValue(entry)!;
+        return (BaseChair)seat.GetType().GetProperty("Chair", members)!.GetValue(seat)!;
+    }
+    GameObject[] Entrances(GameObject vehicle, BaseChair chair)
+    {
+        var key = chair.GameObject.Tags.TryGetAll(false).Single(t => t.StartsWith("sade_seat_", StringComparison.Ordinal));
+        return vehicle.Children.Where(c => c.Tags.Has("sade_vehicle_access", false) && c.Tags.Has(key, false)).ToArray();
     }
 
     PlayerController CreatePlayer(string name, Vector3 position)
@@ -113,6 +171,7 @@ try
 }
 finally
 {
+    if (bikeNative?.IsValid == true) nativeType.GetMethod("Shutdown", members)!.Invoke(bikeNative, null);
     if (native?.IsValid == true) nativeType.GetMethod("Shutdown", members)!.Invoke(native, null);
     scene.Destroy();
 }

@@ -1,4 +1,5 @@
-// Run via run_csharp while the real local player is seated, then press the controls normally.
+// Approach the driver's door and press E, then run via run_csharp and press the controls normally.
+// E also enters a passenger seat from its nearby door and exits the current seat.
 // This observer never injects input, moves the player, or changes the scene/map.
 var scene = Game.ActiveScene;
 var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;

@@ -17,6 +17,7 @@ internal static class VehicleSeats
     private const string SelectedExitTag = "sade_vehicle_selected_exit";
     private const float Reach = 90;
     private static readonly Dictionary<NativeVehicle, Seat[]> vehicles = [];
+    private static readonly Dictionary<NativeVehicle, BikeRiderPose> riders = [];
     private static readonly Dictionary<Scene, SeatControls> scenes = [];
 
     internal static void BuildPrefab(GameObject root, VehicleData data)
@@ -80,6 +81,9 @@ internal static class VehicleSeats
                 LocalPosition = new Vector3(outsideX, bounds.Mins.y - 35, bounds.Mins.z + 8)
             };
             opposite.Tags.Add(key); opposite.Tags.Add(ExitTag);
+            // A saddle or centered cockpit can be entered from either side. Paired car
+            // seats keep their own door, so approaching the right selects the passenger.
+            if (riding || Math.Abs(pelvis.x) <= 5) opposite.Tags.Add(AccessTag);
             behind.Tags.Add(key); behind.Tags.Add(ExitTag);
             var selected = new GameObject(seatObject, true, "Clear exit position");
             selected.Tags.Add(SelectedExitTag);
@@ -107,6 +111,7 @@ internal static class VehicleSeats
             })
             .ToArray();
         vehicles.Add(vehicle, seats);
+        if (BikeRiderPose.Create(vehicle) is { } rider) riders.Add(vehicle, rider);
         if (!scenes.ContainsKey(vehicle.Scene)) scenes.Add(vehicle.Scene, new SeatControls(vehicle.Scene));
     }
 
@@ -164,6 +169,7 @@ internal static class VehicleSeats
     internal static void Detach(NativeVehicle vehicle)
     {
         if (!vehicles.Remove(vehicle, out var seats)) return;
+        if (riders.Remove(vehicle, out var rider)) rider.Dispose();
         foreach (var seat in seats)
         {
             var occupant = seat.Chair.IsValid ? seat.Chair.GetOccupant() : null;
@@ -203,9 +209,27 @@ internal static class VehicleSeats
         return false;
     }
 
+    private static SeatEntry? FindEntry(Scene scene, Vector3 position)
+    {
+        var nearby = vehicles.Where(v => v.Key.IsValid && v.Key.Active && v.Key.Scene == scene)
+            .SelectMany(v => v.Value.Where(s => s.Chair.IsValid && s.Chair.Active)
+                .SelectMany(s => s.Entrances.Select(entrance =>
+                    new SeatEntry(v.Key, s, entrance, entrance.WorldPosition.Distance(position)))))
+            .Where(entry => entry.Distance <= Reach).OrderBy(entry => entry.Distance).ToArray();
+        if (nearby.Length == 0) return null;
+        // Keep selection on this vehicle and on the side being approached. An occupied
+        // driver door must not put the player through the cabin into the opposite seat.
+        var nearest = nearby[0].Vehicle;
+        var side = nearest.WorldTransform.PointToLocal(position).x;
+        return nearby.FirstOrDefault(entry => entry.Vehicle == nearest && !entry.Seat.Chair.IsOccupied
+            && (Math.Abs(side) < 1 || side * nearest.WorldTransform.PointToLocal(entry.Entrance.WorldPosition).x >= 0));
+    }
+
+    private sealed record SeatEntry(NativeVehicle Vehicle, Seat Seat, GameObject Entrance, float Distance);
+
     private sealed record Seat(BaseChair Chair, bool Driver, GameObject[] Exits, GameObject? SelectedExit)
     {
-        internal GameObject? Door => Exits.FirstOrDefault();
+        internal IEnumerable<GameObject> Entrances => Exits.Where(e => e.IsValid() && e.Tags.Has(AccessTag, false));
     }
 
     private sealed class SeatControls(Scene scene) : IDisposable
@@ -258,20 +282,13 @@ internal static class VehicleSeats
             ReleasePlayer();
             // Players already seated in another system's chair should not jump between vehicles.
             if (player.GetComponentInParent<ISitTarget>() is not null) { return; }
-            var near = entries.SelectMany(v => v.Value.Select(s => (Vehicle: v.Key, Seat: s)))
-                .Where(x => x.Seat.Chair.IsValid && x.Seat.Door.IsValid())
-                .Select(x => (x.Vehicle, x.Seat, Distance: (x.Seat.Door!.WorldPosition - player.WorldPosition).Length))
-                .Where(x => x.Distance <= Reach)
-                .OrderBy(x => x.Distance).ToArray();
-            if (near.Length == 0) { return; }
-            var nearest = near[0].Vehicle;
-            var nearbySeats = near.Where(x => x.Vehicle == nearest).ToArray();
-            var driverSeat = nearbySeats.FirstOrDefault(x => x.Seat.Driver && !x.Seat.Chair.IsOccupied).Seat;
-            var passenger = nearbySeats.FirstOrDefault(x => !x.Seat.Driver && !x.Seat.Chair.IsOccupied).Seat;
-            var chosen = Input.Keyboard.Pressed("e") ? driverSeat : Input.Keyboard.Pressed("g") ? passenger : null;
-            if (chosen is null) return;
+            if (!Input.Keyboard.Pressed("e")) return;
+            var entry = FindEntry(scene, player.WorldPosition);
+            if (entry is null) return;
+            var nearest = entry.Vehicle;
+            var chosen = entry.Seat;
             Input.Clear(player.UseButton);
-            var target = chosen.Door!.WorldPosition + Vector3.Up * 28;
+            var target = entry.Entrance.WorldPosition + Vector3.Up * 28;
             var approach = scene.Trace.Ray(player.EyeTransform.Position, target)
                 .IgnoreGameObjectHierarchy(player.GameObject).IgnoreGameObjectHierarchy(nearest.GameObject)
                 .WithoutTags("trigger").Run();

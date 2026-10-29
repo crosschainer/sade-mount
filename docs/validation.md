@@ -1,6 +1,6 @@
 # Validation
 
-Checked on Windows with the Steam Definitive Edition build 16391096 and .NET 10. The mount reads the two installed PAK archives; extracted assets are kept out of the repository and release.
+Checked on Windows with s&box 26.10.27c, the Steam Definitive Edition build 16391096 and .NET 10. The mount reads the two installed PAK archives; extracted assets are kept out of the repository and release.
 
 ## Automated checks
 
@@ -34,7 +34,8 @@ The installed-game audits read 281 animation banks, 1,101 native animation seque
 - The Maverick was also confirmed working in normal play after the control, rotor and sound changes.
 - A Dodo lost altitude without forward airspeed, turned in the direction of its bank and took off after building speed on a runway. These checks use engine physics with deterministic inputs.
 - Sanchez and BMX stayed upright at rest and leaned into mirrored left/right turns. Their measured vertical speed during flat-ground turns stayed below 9 units per second.
-- Driver and passenger entry, occupied seats, seated collision, exit clearance and restored walking passed the offline seat checks.
+- All twelve bikes with authored grip sockets fit the Human rider to the saddle and handlebars, including during translation, yaw and lean. The isolated engine check covers palm contact, unchanged arm lengths, clothing and attachment alignment, and restoring the normal pose after exit. NRG-500, Sanchez and BMX were also captured and inspected in engine renders.
+- E's door-based seat selection passed checks for left/right entry, rotated vehicles, occupied seats, entry distance and bike rider/pillion access from both sides. Driver and passenger entry, seated collision, exit clearance and restored walking also passed the offline seat checks. These exercise the same selection helper as keyboard input without injecting a key press.
 - The Infernus settles at the source suspension equilibrium of 72.7083 cm, with all four rendered tire bottoms on the floor. From 110 km/h it stops in 26.77 m / 1.76 s using the foot brake, or 33.22 m / 2.18 s using the rear handbrake. These are deterministic engine-physics measurements; keyboard feel remains a playtest judgment. The source invisible underbody material also retains its zero opacity.
 
 The repeatable engine scripts are in [`tests/Sade.Mount.Integration`](../tests/Sade.Mount.Integration/README.md). They use the installed mount and real engine physics in temporary scenes.
@@ -45,4 +46,4 @@ Multiplayer ownership, replication and passenger behavior have not completed a t
 
 Vehicle dynamics and weapon effects are s&box implementations driven by source data. They are not a reproduction of GTA's complete gameplay simulation.
 
-Bike riders currently use the standard player seat pose. Twelve of thirteen bike models have authored grip sockets, but the installed Human player model has no riding animation. Its supported seated lean still leaves NRG-500 grips about 11 units beyond the measured arm reach. Hand IK is left off until a fitting riding pose is available.
+Bike rider posing requires the Human skeleton and authored grip sockets. Pizzaboy has no grip sockets and keeps the standard seat pose; unsupported player skeletons also keep their own seated animation. Foot placement still uses the standard seat pose. The rider checks use the installed Human model and do not establish fit for every avatar proportion or multiplayer replication.
