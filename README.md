@@ -1,6 +1,6 @@
 # GTA San Andreas — The Definitive Edition mount for s&box
 
-Browse GTA San Andreas models, textures, sounds, and animations directly in s&box.
+Browse GTA San Andreas models, textures, sounds, and animations directly in s&box. Open Sandbox's **Mounts** tab to spawn characters, props and playable vehicles from your installed game.
 
 We mount the Definitive Edition because the original San Andreas was delisted from Steam.
 
@@ -8,7 +8,7 @@ We mount the Definitive Edition because the original San Andreas was delisted fr
 
 You need s&box and GTA San Andreas — The Definitive Edition installed through Steam.
 
-1. Download `sade-mount.zip` from **Releases**.
+1. **[Download sade-mount.zip — v0.1](https://github.com/crosschainer/sade-mount/releases/download/v0.1/sade-mount.zip)**.
 2. Close s&box.
 3. Extract the ZIP into s&box's `mount` folder. The result should be `sbox/mount/sade/sade.dll`.
 4. Launch s&box and activate **GTA San Andreas — The Definitive Edition** in **Mounts**.
@@ -17,9 +17,19 @@ To find the s&box folder, right-click it in Steam and choose **Manage → Browse
 
 When updating, close s&box and replace the `sade` folder with the new release. Keep `sade.json` if you have customized it. No SDK or build tools are needed to use a release.
 
-![Grove Street and Ballas fighting in the s&box demo](docs/images/grove-street-fight.png)
+[Release notes and downloads](https://github.com/crosschainer/sade-mount/releases/tag/v0.1)
 
-[Another view of the showcase and mounted props](docs/images/grove-street-props.png)
+![An Infernus, NRG-500 and street props spawned in Sandbox](docs/images/sandbox-vehicles-and-props.png)
+
+## See it in Sandbox
+
+Click a thumbnail to watch the recorded gameplay.
+
+| Pedestrians and gang fights · 47 seconds | Car driving · 8 seconds |
+| --- | --- |
+| [![Watch pedestrians and gang fights](docs/images/pedestrians-preview.jpg)](https://github.com/crosschainer/sade-mount/blob/main/docs/videos/pedestrians.mp4) | [![Watch car driving](docs/images/car-driving-preview.jpg)](https://github.com/crosschainer/sade-mount/blob/main/docs/videos/car-driving.mp4) |
+| **Motorcycle riding · 8 seconds** | **Helicopter flight · 25 seconds** |
+| [![Watch motorcycle riding](docs/images/motorcycle-riding-preview.jpg)](https://github.com/crosschainer/sade-mount/blob/main/docs/videos/motorcycle-riding.mp4) | [![Watch helicopter flight](docs/images/helicopter-flight-preview.jpg)](https://github.com/crosschainer/sade-mount/blob/main/docs/videos/helicopter-flight.mp4) |
 
 ## What's included
 
@@ -41,7 +51,7 @@ Grove Street, Ballas, Vagos, Aztecas, Rifa, Triads, Da Nang Boys and Mafia use t
 
 Grab an NPC's arm, leg or body with the physgun to switch it into a poseable ragdoll. It stays in pose mode so frozen limbs keep their positions. Spawn another copy when you want an active NPC again.
 
-Near a vehicle, press **E** at the driver's door to drive, or **G** near an available passenger seat. Press **E** again to exit.
+Near a vehicle, press **E** on the left side to drive, or on the right side to take an available passenger seat. Press **E** again to exit.
 
 | Vehicle | Controls |
 | --- | --- |
