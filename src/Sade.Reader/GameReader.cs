@@ -15,7 +15,7 @@ namespace Sade.Reader;
 /// <summary>Reads the installed game's PAKs. The host loads this assembly in its own dependency context.</summary>
 public sealed partial class GameReader : IGameReader
 {
-    private const string CacheVersion = "sade-reader-4-cue4parse-1.2.2.202610";
+    private const string CacheVersion = "sade-reader-6-cue4parse-1.2.2.202610";
     private const long MaximumCatalogBytes = 128L * 1024 * 1024;
     private readonly object gate = new();
     private DefaultFileProvider? provider;

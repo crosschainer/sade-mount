@@ -65,10 +65,30 @@ try
         {
             Check(ids.Contains(materialId), "Material dependency is registered: " + materialId);
             var material = reader.LoadMaterial(materialId);
-            foreach (var textureId in new[] { material.ColorTexture, material.NormalTexture, material.RoughnessTexture, material.MetallicTexture, material.OpacityTexture, material.EmissiveTexture }.OfType<string>())
+            foreach (var textureId in new[] { material.ColorTexture, material.NormalTexture, material.RoughnessTexture, material.MetallicTexture, material.PackedTexture, material.OpacityTexture, material.EmissiveTexture }.OfType<string>())
                 Check(ids.Contains(textureId), "Texture dependency is registered: " + textureId);
         }
     }
+    var smokeClothes = reader.LoadMaterial("/Game/SanAndreas/Cutscene/Characters/MI_cssmoke_clothes.MI_cssmoke_clothes");
+    Check(smokeClothes.CharacterPackedLayout && smokeClothes.UsePackedPbr && smokeClothes.PackedTexture?.Contains("T_cssmoke_clothes_P") == true,
+        "Smoke inherits IsPacked and resolves the clothing metallic/roughness mask.");
+    var glasses = reader.LoadMaterial("/Game/SanAndreas/Cutscene/Characters/MI_Glass_Smoke.MI_Glass_Smoke");
+    Check(!glasses.CharacterPackedLayout && !glasses.UsePackedPbr && glasses.BlendMode == "Translucent", "Glasses retain separate glass shading.");
+    var cj = reader.LoadModel(Sade.Mount.PlayerOutfit.ModelId);
+    var vest = reader.LoadModel(Sade.Mount.PlayerOutfit.VestId);
+    var jeans = reader.LoadModel(Sade.Mount.PlayerOutfit.JeansId);
+    var dressed = Sade.Mount.PlayerOutfit.Dress(cj, vest, jeans);
+    Check(dressed.Parts.Any(p => p.MaterialId?.EndsWith("/MI_vest.MI_vest") == true), "CJ wears the default white vest.");
+    Check(dressed.Parts.Count(p => p.Name.StartsWith("vest/")) == vest.Parts.Length, "CJ's bare upper body is replaced once.");
+    Check(cj.Parts.Where(p => p.MaterialId?.Contains("sneaker") == true || p.MaterialId?.Contains("player_face") == true)
+        .All(p => dressed.Parts.Contains(p)), "CJ keeps his original head and shoes.");
+    Check(dressed.Parts.First(p => p.Name.StartsWith("jeans/")).Vertices.Select(v => v.UV).SequenceEqual(jeans.Parts[0].Vertices.Select(v => v.UV)), "CJ uses the standalone jeans UVs.");
+    var leftHelper = Array.FindIndex(cj.Bones, b => b.Name == "L_breast");
+    Check(dressed.Parts.Where(p => p.Lod == 0).SelectMany(p => p.Vertices).All(v =>
+        !(v.Bones.X == leftHelper && v.Weights.X > .05f || v.Bones.Y == leftHelper && v.Weights.Y > .05f || v.Bones.Z == leftHelper && v.Weights.Z > .05f || v.Bones.W == leftHelper && v.Weights.W > .05f)),
+        "The dressed CJ uses the vest's correct left upper-arm weights.");
+    var walks = reader.LoadAnimations("ifp:ped", dressed, true, ["WALK_player", "run_player"]);
+    Check(walks.All(c => c.Frames.All(f => f[leftHelper] == dressed.Bones[leftHelper].LocalBind)), "CJ's DE arm helper stays in its reference pose throughout locomotion.");
     Console.WriteLine("PASS installed-game cache recovery and transitive fixture dependencies.");
 }
 finally

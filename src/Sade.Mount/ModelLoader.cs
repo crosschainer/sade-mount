@@ -6,11 +6,16 @@ using N = System.Numerics;
 
 namespace Sade.Mount;
 
-internal sealed class ModelLoader(string id, string? animationId = null, string? weaponId = null) : ResourceLoader<SadeMount>
+internal sealed class ModelLoader(string id, string? animationId = null, string? weaponId = null, bool previewWheels = true) : ResourceLoader<SadeMount>
 {
     protected override object Load()
     {
         var data = Host.GetModelData(id);
+        if (id.Equals(PlayerOutfit.ModelId, StringComparison.OrdinalIgnoreCase))
+            data = PlayerOutfit.Dress(data, Host.GetModelData(PlayerOutfit.VestId), Host.GetModelData(PlayerOutfit.JeansId));
+        var vehicle = Host.Reader.GetVehicles().FirstOrDefault(v => v.ModelId.Equals(id, StringComparison.OrdinalIgnoreCase));
+        if (previewWheels && vehicle?.WheelModelId is { } wheelId)
+            data = VehiclePreviewGeometry.Assemble(data, Host.GetModelData(wheelId), vehicle);
         if (data.Parts.Length == 0) throw new InvalidDataException($"{id} contains no render geometry.");
         if (data.Bones.Length > 256) throw new NotSupportedException($"{id}: {data.Bones.Length} bones exceed the engine vertex palette limit.");
         var builder = Model.Builder.WithName(Path).WithMass(80);
@@ -82,15 +87,18 @@ internal sealed class ModelLoader(string id, string? animationId = null, string?
             var bounds = boneBounds[i] ?? new BBox(new Vector3(-0.5f), new Vector3(0.5f));
             builder.AddBone(bone.Name, transform.Position, transform.Rotation, bounds, bone.Parent < 0 ? null : data.Bones[bone.Parent].Name);
         }
-        AddCollision(builder, data.Collision);
+        var pedestrianPreset = Host.Reader.GetPedestrianPreset(id);
+        var posingBodies = pedestrianPreset is not null ? PedestrianPhysicsBuilder.Add(builder, data) : 0;
+        if (posingBodies == 0) AddCollision(builder, data.Collision);
+        else Host.Report(new(id, $"Generated {posingBodies}-body articulated posing rig from reference bones and skin weights; constraints and shapes are mount-generated, not an authored GTA PhysicsAsset."));
         if (data.Collision.IsEmpty && data.Bones.Length == 0) Host.Report(new(id, "No authored collision was found."));
         AnimationClipData[] actorClips = [];
-        var actorPreset = animationId is null ? Host.Reader.GetPedestrianPreset(id) : null;
+        var actorPreset = animationId is null ? pedestrianPreset : null;
         var actorWeapon = weaponId is null ? Host.DefaultWeapon(id) : Host.GetWeapon(weaponId);
         if (data.Bones.Length > 0)
         {
             AnimationClipData[] clips = [];
-            var preset = Host.Reader.GetPedestrianPreset(id);
+            var preset = pedestrianPreset;
             if (animationId is not null) clips = Host.Reader.LoadAnimations(animationId, data);
             else if (preset is not null)
             {
@@ -119,6 +127,10 @@ internal sealed class ModelLoader(string id, string? animationId = null, string?
                     additions.Add(fire with { Name = "sade_fire", Frames = fire.Frames[start..end], Looping = false });
                 }
                 if (reload is not null) additions.Add(reload with { Name = "sade_reload", Looping = false });
+                if (actorWeapon.AimWithArm && actorClips.FirstOrDefault(c => c.Name.Equals(actorPreset.Idle, StringComparison.OrdinalIgnoreCase)) is { } idle)
+                    for (var i = 0; i < additions.Count; i++)
+                        if (additions[i].Name is "sade_aim" or "sade_fire")
+                            additions[i] = PedestrianAnimationLayers.RelaxFreeArm(additions[i], idle, data);
                 clips = clips.Concat(additions).DistinctBy(x => x.Name, StringComparer.OrdinalIgnoreCase).ToArray();
             }
             foreach (var clip in clips)
@@ -133,6 +145,8 @@ internal sealed class ModelLoader(string id, string? animationId = null, string?
             }
         }
         var built = builder.Create();
+        if (posingBodies > 0) PedestrianPhysicsBuilder.Validate(built, posingBodies);
+        if (vehicle is not null) Host.RegisterVehicleModel(built, Path, vehicle);
         if (actorPreset is not null) Host.RegisterActor(built, Path, id, actorPreset, actorClips, actorWeapon);
         return built;
     }

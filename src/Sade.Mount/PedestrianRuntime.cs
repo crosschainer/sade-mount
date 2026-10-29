@@ -169,6 +169,7 @@ internal static class PedestrianRuntime
         private readonly Scene scene;
         private readonly Func<bool> stopped;
         private readonly List<NativePedestrian> pedestrians = new();
+        private readonly IDisposable spawnHook;
         private readonly IDisposable updateHook;
         private readonly IDisposable poseHook;
         private readonly IDisposable loadHook;
@@ -178,6 +179,8 @@ internal static class PedestrianRuntime
         {
             this.scene = scene;
             this.stopped = stopped;
+            spawnHook = scene.AddHook(GameObjectSystem.Stage.StartFixedUpdate, -10000, DiscoverNewProps,
+                "SADE", "Initialize mounted pedestrians before prop physics");
             updateHook = scene.AddHook(GameObjectSystem.Stage.StartUpdate, 10, Update,
                 "SADE", "Pedestrian movement and combat");
             poseHook = scene.AddHook(GameObjectSystem.Stage.FinishUpdate, 10, SyncWeaponPoses,
@@ -186,17 +189,33 @@ internal static class PedestrianRuntime
                 "SADE", "Restore mounted pedestrians");
         }
 
+        private void DiscoverNewProps()
+        {
+            if (disposed || stopped() || !scene.IsValid || scene.IsLoading || scene.IsEditor ||
+                (Networking.IsActive && !Networking.IsHost)) return;
+            // Sandbox creates a dynamic Prop first. Waiting for the coarse scene observer
+            // lets its ragdoll simulate before promotion. Check only the active Prop index
+            // here; the full renderer discovery still runs only on a match or observation.
+            if (scene.GetAllComponents<Prop>().Any(prop => !prop.Tags.Has(Marker) &&
+                prop.Model is { IsValid: true } model && TryGetProfile(model, out _))) Discover();
+        }
+
         internal void Discover()
         {
             if (disposed || stopped() || !scene.IsValid || scene.IsLoading || scene.IsEditor) return;
             pedestrians.RemoveAll(p => !p.IsValid);
             PromoteSpawnedModels();
-            // NavMeshAgent is a built-in serialized marker companion, so this uses the
-            // engine component index instead of scanning every object in a large map.
-            foreach (var agent in scene.GetAllComponents<NavMeshAgent>().ToArray())
+            // Posing disables the crowd agent. Its active ModelPhysics lets us find the
+            // saved disabled agent again without scanning every object in a large map.
+            var agents = scene.GetAllComponents<NavMeshAgent>().Concat(
+                scene.GetAllComponents<ModelPhysics>()
+                    .Select(p => p.GetComponentInParent<NavMeshAgent>(includeDisabled: true))
+                    .Where(a => a.IsValid())).Distinct().ToArray();
+            foreach (var agent in agents)
             {
                 var root = agent.GameObject;
                 if (!root.Tags.Has(Marker, false)) continue;
+                EnsureHostOwnership(root);
                 var existing = root.Components.Get<NativePedestrian>(FindMode.EverythingInSelf);
                 if (existing is { IsValid: true })
                 {
@@ -220,33 +239,35 @@ internal static class PedestrianRuntime
             // Only model paths explicitly registered as actors opt into this conversion.
             foreach (var original in scene.GetAllComponents<ModelRenderer>().ToArray())
             {
-                if (!original.IsValid || !original.Active || original.IsProxy) continue;
+                if (!original.IsValid || !original.Active || (Networking.IsActive && !Networking.IsHost)) continue;
                 var root = original.GameObject;
                 if (root.Tags.Has(Marker) || original.Model is not { IsValid: true } model ||
                     !TryGetProfile(model, out var profile)) continue;
+                EnsureHostOwnership(root);
+                if (root.IsProxy) continue;
                 var tint = original.Tint;
                 var groups = original.BodyGroups;
                 var materials = original.MaterialGroup;
                 var materialOverride = original.MaterialOverride;
-                var feet = root.WorldTransform.PointToWorld(Vector3.Up * model.Bounds.Mins.z);
+                var actorTransform = RecoverActorTransform(root);
+                var feet = actorTransform.PointToWorld(Vector3.Up * model.Bounds.Mins.z);
 
                 // Disabling Prop releases the rendering/physics components it owns. Remove
                 // its damage handler as well, while retaining the root, ownership and undo.
-                foreach (var prop in root.Components.GetAll<Prop>(FindMode.EverythingInSelf).ToArray())
-                {
-                    prop.Enabled = false;
-                    prop.Destroy();
-                }
+                SpawnedProp.Release(root);
                 foreach (var component in root.Components.GetAll<Component>(FindMode.EverythingInSelf).ToArray())
                 {
                     if (component is not (ModelRenderer or Collider or Rigidbody or ModelPhysics)) continue;
                     component.Enabled = false;
                     component.Destroy();
                 }
-                root.WorldPosition = feet;
+                root.WorldTransform = actorTransform.WithPosition(feet);
+                // Promotion can run inside fixed update. This is a change of coordinate
+                // frame, not movement to interpolate from the old model-origin position.
+                root.Transform.ClearInterpolation();
                 root.Tags.Add(Marker);
                 root.Tags.Add("sade_" + profile.Faction);
-                var visual = new GameObject(root, true, "Character")
+                var visual = new GameObject(root, false, "Character")
                 {
                     LocalPosition = Vector3.Up * -model.Bounds.Mins.z
                 };
@@ -260,6 +281,7 @@ internal static class PedestrianRuntime
                 renderer.Sequence.Name = profile.Idle;
                 renderer.Sequence.Looping = true;
                 renderer.Sequence.Blending = true;
+                visual.Enabled = true;
                 var agent = root.Components.Create<NavMeshAgent>();
                 agent.UpdatePosition = true;
                 agent.UpdateRotation = true;
@@ -275,9 +297,41 @@ internal static class PedestrianRuntime
             }
         }
 
+        private static Transform RecoverActorTransform(GameObject root)
+        {
+            var transform = root.WorldTransform;
+            var physics = root.GetComponent<ModelPhysics>();
+            if (physics is { IgnoreRoot: false, MotionEnabled: true } && physics.Bodies.Count > 0)
+            {
+                // ModelPhysics drives a Prop root from its first physical bone (Pelvis).
+                // That bone has a different local basis from the model; retaining it would
+                // put the new animated NPC sideways and offset its feet horizontally.
+                var body = physics.Bodies[0];
+                if (body.Component.IsValid())
+                {
+                    var rotation = body.Component.WorldRotation * body.LocalTransform.Rotation.Inverse;
+                    transform.Rotation = rotation;
+                    transform.Position = body.Component.WorldPosition - rotation * (body.LocalTransform.Position * transform.Scale);
+                }
+            }
+            var forward = transform.Rotation.Forward.WithZ(0);
+            transform.Rotation = Rotation.LookAt(forward.Length > .001f ? forward.Normal : Vector3.Forward);
+            return transform;
+        }
+
+        private static void EnsureHostOwnership(GameObject root)
+        {
+            // Sandbox records the spawning player for undo separately from network ownership.
+            // NPC decisions and damage run on the host, including NPCs spawned by a remote player.
+            if (!Networking.IsHost || !root.Network.Active) return;
+            if (root.IsProxy) root.Network.TakeOwnership();
+            root.Network.SetOwnerTransfer(OwnerTransfer.Fixed);
+        }
+
         private void Update()
         {
             if (disposed || stopped() || !scene.IsValid || scene.IsEditor || scene.IsLoading || !Game.IsPlaying) return;
+            DiscoverNewProps(); // Also covers render frames without a fixed physics step.
             pedestrians.RemoveAll(p => !p.IsValid);
             foreach (var pedestrian in pedestrians)
             {
@@ -298,6 +352,7 @@ internal static class PedestrianRuntime
         {
             if (disposed) return;
             disposed = true;
+            spawnHook.Dispose();
             updateHook.Dispose();
             poseHook.Dispose();
             loadHook.Dispose();

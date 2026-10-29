@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
   <ItemGroup><ProjectReference Include="../../src/Sade.Reader/Sade.Reader.csproj" /></ItemGroup>
+  <ItemGroup><Compile Include="../../src/Sade.Mount/PlayerOutfit.cs" Link="PlayerOutfit.cs" /></ItemGroup>
 </Project>

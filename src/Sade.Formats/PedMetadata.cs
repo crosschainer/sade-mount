@@ -67,6 +67,11 @@ public sealed class PedMetadata
     {
         var name = modelId.Replace('\\', '/').Split('/')[^1].Split('.')[0];
         if (name.StartsWith("SK_", StringComparison.OrdinalIgnoreCase)) name = name[3..];
+        if (name.Equals("Player_Combined", StringComparison.OrdinalIgnoreCase))
+            return new PedestrianPreset("CJ", "ifp:ped", "IDLE_stance", "WALK_player", "run_player", "player")
+            {
+                Faction = "Grove", EnemyFactions = Hostilities.GetValueOrDefault("GANG2", [])
+            };
         string group, pedType;
         if (NamedPresets.TryGetValue(name, out var named)) { group = named.Group; pedType = named.PedType; }
         else if (Definitions.TryGetValue(name, out var definition)) { group = definition.Group; pedType = definition.PedType; }

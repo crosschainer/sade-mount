@@ -86,6 +86,7 @@ public sealed partial class SadeMount : BaseGameMount
                 foreach (var clip in nativeAnimations.Where(x => string.Equals(x.SkeletonId, entry.SkeletonId, StringComparison.OrdinalIgnoreCase)))
                     context.Add(ResourceType.Model, $"animations/{CleanPath(entry.Path)}/{CleanPath(clip.Path)}", new ModelLoader(entry.Id, clip.Id));
             }
+            InvalidateOldPreviews();
             PedestrianRuntime.Start();
             VehicleRuntime.Start();
             IsMounted = true;
@@ -115,6 +116,17 @@ public sealed partial class SadeMount : BaseGameMount
     }
 
     internal string ModelPath(string id) => PathFor(AssetKind.SkeletalMesh, id) ?? PathFor(AssetKind.StaticMesh, id) ?? throw new KeyNotFoundException(id);
+    private void InvalidateOldPreviews()
+    {
+        // The engine caches mount thumbnails by path alone. Converted geometry can change
+        // without changing that stable path, so invalidate only this mount's icons on updates.
+        var version = Reader.Fingerprint + "/" + typeof(SadeMount).Module.ModuleVersionId;
+        const string key = "sade/preview-version";
+        if (FileSystem.Cache.TryGet(key, out var previous) && System.Text.Encoding.UTF8.GetString(previous) == version) return;
+        foreach (var loader in Resources)
+            if (loader.Type == ResourceType.Model) FileSystem.Cache.Remove($"preview/icons/{loader.Path.Md5()}.png");
+        FileSystem.Cache.Set(key, System.Text.Encoding.UTF8.GetBytes(version));
+    }
     internal ModelData GetModelData(string id)
     {
         if (!modelData.TryGetValue(id, out var value)) modelData[id] = value = Reader.LoadModel(id);

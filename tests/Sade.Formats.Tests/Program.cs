@@ -35,6 +35,7 @@ var tests = new (string Name, Action Run)[]
     ("Collision rejects out-of-range offsets and indices", TestBadCollision),
     ("Binding samples endpoints, preserves reference channels, and removes travel", TestBinding),
     ("Binding catches incompatible and duplicate track assignments", TestBadBinding),
+    ("CJ arm helpers retain their bind pose without changing classic torso tracks", TestPlayerHelpers),
     ("Pedestrian metadata and explicit Smoke preset", TestPedMetadata)
 };
 foreach (var (name, run) in tests) { run(); Console.WriteLine($"PASS {name}"); }
@@ -182,6 +183,17 @@ static void TestBinding()
     var converted = AnimationBinder.Bind(bank with { Clips = [forward] }, model).Single();
     NearVector(converted.Frames[^1][0].Position - converted.Frames[0][0].Position, new Vector3(200, 0, 0));
     NearVector(Vector3.Transform(Vector3.UnitX, converted.Frames[0][0].Rotation), Vector3.UnitX);
+    var cj = model with { Bones = [model.Bones[0] with { Name = "Normal" }, model.Bones[1],
+        new BoneData("Spine_1", 1, TransformData.Identity, TransformData.Identity),
+        new BoneData("Spine_2", 2, TransformData.Identity, TransformData.Identity)] };
+    var spineRotation = Quaternion.CreateFromAxisAngle(Vector3.UnitX, .4f);
+    var cjClip = forward with { Tracks = [.. forward.Tracks,
+        new AnimationTrack("Spine", 2, [new AnimationKey(0, spineRotation, null)]),
+        new AnimationTrack("Spine1", 3, [new AnimationKey(0, spineRotation, null)])] };
+    var cjPose = AnimationBinder.Bind(bank with { Clips = [cjClip] }, cj).Single();
+    NearVector(cjPose.Frames[^1][0].Position, converted.Frames[^1][0].Position);
+    Near(Math.Abs(Quaternion.Dot(cjPose.Frames[0][2].Rotation, GtaCoordinates.ToUnreal(spineRotation))), 1);
+    Near(Math.Abs(Quaternion.Dot(cjPose.Frames[0][3].Rotation, GtaCoordinates.ToUnreal(spineRotation))), 1);
     // Props have no pedestrian Pelvis and keep their original animation coordinate convention.
     var prop = model with { Bones = [model.Bones[0]] };
     var propClip = AnimationBinder.Bind(bank with { Clips = [forward] }, prop).Single();
@@ -196,6 +208,21 @@ static void TestBadBinding()
     var missing = bank.Clips[0] with { Tracks = [bank.Clips[0].Tracks[0] with { Name = "unrelated", BoneTag = null }] };
     Throws<InvalidDataException>(() => AnimationBinder.Bind(bank with { Clips = [missing] }, Model()));
 }
+static void TestPlayerHelpers()
+{
+    var turn = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, 1.5f);
+    var bank = new AnimationBankData("ped", [new RawAnimationClip("walk", [
+        new("Normal", 0, [new(0, Quaternion.Identity, null)]),
+        new("L breast", 302, [new(0, turn, null)])], 0)]);
+    var body = Model() with { Bones = [Model().Bones[0], Model().Bones[1],
+        new("L_UpperArm", 1, TransformData.Identity, TransformData.Identity),
+        new("L_breast", 2, TransformData.Identity, TransformData.Identity)] };
+    var cj = AnimationBinder.Bind(bank, body).Single();
+    Equal(cj.Frames[0][3], TransformData.Identity);
+    var classic = body with { Bones = [.. body.Bones.Take(3), body.Bones[3] with { Parent = 1 }] };
+    var pose = AnimationBinder.Bind(bank, classic).Single();
+    Near(Math.Abs(Quaternion.Dot(pose.Frames[0][3].Rotation, GtaCoordinates.ToUnreal(turn))), 1);
+}
 static void TestPedMetadata()
 {
     const string peds = "# example\npeds\n46, HMYRI, HMYRI, CIVMALE, STAT_SUIT_GUY, man, 1983\nend\n";
@@ -204,6 +231,8 @@ static void TestPedMetadata()
     Equal(metadata.GetPreset("/Game/SanAndreas/Characters/Peds/SK_smoke.SK_smoke")!.Walk, "WALK_fat");
     Equal(metadata.GetPreset("SK_hmyri")!.Group, "man");
     Equal(metadata.GetPreset("SK_hmyri")!.BankId, "ifp:ped");
+    Equal(metadata.GetPreset("SK_Player_Combined")!.Name, "CJ");
+    Equal(metadata.GetPreset("SK_Player_Combined")!.Walk, "WALK_player");
     Equal(metadata.GetPreset("SK_unknown"), null);
     Throws<InvalidDataException>(() => PedMetadata.Parse(peds, groups[..^3]));
 }

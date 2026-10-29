@@ -59,7 +59,7 @@ public sealed partial class SadeMount
     {
         var picks = new (string Model, string Label)[]
         {
-            ("SK_smoke", "01_big_smoke"), ("SK_sweet", "02_sweet"), ("SK_ryder", "03_ryder"),
+            ("SK_Player_Combined", "00_cj"), ("SK_smoke", "01_big_smoke"), ("SK_sweet", "02_sweet"), ("SK_ryder2", "03_ryder"),
             ("SK_fam1", "10_grove_street"), ("SK_ballas1", "11_ballas"), ("SK_lsv1", "12_vagos"),
             ("SK_vla1", "13_aztecas"), ("SK_sfr1", "14_rifa"), ("SK_triada", "15_triads"),
             ("SK_dnb1", "16_da_nang_boys"), ("SK_maffa", "17_mafia")

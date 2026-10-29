@@ -127,14 +127,14 @@ internal static class VehicleRuntime
                 var groups = original.BodyGroups;
                 var materials = original.MaterialGroup;
                 var materialOverride = original.MaterialOverride;
+                // Thumbnails show the complete assembled model. Driving uses the original body
+                // plus independently rotating wheel objects, so the preview wheels are replaced.
+                var bodyModel = Model.Load(profile.ModelPath);
+                if (bodyModel is null || bodyModel.IsError) continue;
                 var oldBody = root.Components.Get<Rigidbody>(FindMode.EnabledInSelf);
                 var velocity = oldBody is { IsValid: true } ? oldBody.Velocity : Vector3.Zero;
                 var angularVelocity = oldBody is { IsValid: true } ? oldBody.AngularVelocity : Vector3.Zero;
-                foreach (var prop in root.Components.GetAll<Prop>(FindMode.EverythingInSelf).ToArray())
-                {
-                    prop.Enabled = false;
-                    prop.Destroy();
-                }
+                SpawnedProp.Release(root);
                 foreach (var component in root.Components.GetAll<Component>(FindMode.EverythingInSelf).ToArray())
                 {
                     if (component is not (ModelRenderer or Collider or Rigidbody or ModelPhysics)) continue;
@@ -144,13 +144,13 @@ internal static class VehicleRuntime
                 root.Tags.Add(Marker);
                 root.Tags.Add("sade_" + profile.Data.Family);
                 var renderer = root.Components.Create<SkinnedModelRenderer>();
-                renderer.Model = model;
+                renderer.Model = bodyModel;
                 renderer.Tint = tint;
                 renderer.BodyGroups = groups;
                 renderer.MaterialGroup = materials;
                 renderer.MaterialOverride = materialOverride;
                 renderer.UseAnimGraph = false;
-                root.Components.Create<ModelCollider>().Model = model;
+                root.Components.Create<ModelCollider>().Model = bodyModel;
                 var body = root.Components.Create<Rigidbody>();
                 body.MassOverride = Math.Max(1, profile.Data.MassKg);
                 body.OverrideMassCenter = true;

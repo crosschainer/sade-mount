@@ -83,7 +83,8 @@ public sealed partial class GameReader
         {
             var guessed = new CMaterialParams();
             source.GetParams(guessed);
-            result = result with { ColorTexture = ObjectId(guessed.Diffuse?.Load()), NormalTexture = ObjectId(guessed.Normal?.Load()),
+            result = result with { CharacterPackedLayout = source.Name is "M_Character_VGD" or "M_Character_Clothes_VGD" or "M_Character_Hair_VGD",
+                ColorTexture = ObjectId(guessed.Diffuse?.Load()), NormalTexture = ObjectId(guessed.Normal?.Load()),
                 OpacityTexture = ObjectId(guessed.Opacity?.Load()), EmissiveTexture = ObjectId(guessed.Emissive?.Load()),
                 BlendMode = source.GetOrDefault("BlendMode", EBlendMode.BLEND_Opaque).ToString().Replace("BLEND_", ""),
                 TwoSided = source.GetOrDefault<bool>("TwoSided"), AlphaCutoff = source.GetOrDefault("OpacityMaskClipValue", .333f) };
@@ -98,18 +99,23 @@ public sealed partial class GameReader
         }
         if (source is UMaterialInstanceConstant material)
         {
+            if (material.GetOrDefault<FStaticParameterSet>("StaticParameters") is { } switches)
+                foreach (var value in switches.StaticSwitchParameters ?? [])
+                    if (value.bOverride && string.Equals(value.ParameterInfo?.Name.Text, "IsPacked", StringComparison.OrdinalIgnoreCase))
+                        result = result with { UsePackedPbr = value.Value };
             foreach (var value in material.TextureParameterValues)
             {
                 var texture = ObjectId(value.ParameterValue?.Load());
                 if (texture is null) continue;
                 var name = value.Name.ToLowerInvariant().Replace(" ", "");
-                if (name == "packedtexture") report?.Invoke(new Diagnostic(id, "PackedTexture shader channel layout is unavailable in the cooked material graph; PBR uses inherited separate maps and scalar parameters."));
+                if (name == "packedtexture" && !result.CharacterPackedLayout) report?.Invoke(new Diagnostic(id, "This material's PackedTexture layout is not mapped; PBR uses inherited separate maps and scalars."));
                 result = name switch
                 {
                     "basecolor" or "diffuse" or "diffusetexture" or "albedo" or "colortexture" => result with { ColorTexture = texture },
                     "normal" or "normalmap" or "normaltexture" => result with { NormalTexture = texture },
                     "roughness" or "roughnesstexture" => result with { RoughnessTexture = texture },
                     "metallic" or "metallictexture" => result with { MetallicTexture = texture },
+                    "packedtexture" => result with { PackedTexture = texture },
                     "opacity" or "opacitytexture" or "opacitymask" => result with { OpacityTexture = texture },
                     "emissive" or "emissivetexture" => result with { EmissiveTexture = texture },
                     _ => result

@@ -42,6 +42,8 @@ internal sealed class MaterialLoader(string id) : ResourceLoader<SadeMount>
         material.Set("g_tNormal", TextureFor(data.NormalTexture, FlatNormal));
         material.Set("g_tRoughness", TextureFor(data.RoughnessTexture, Texture.White));
         material.Set("g_tMetalness", TextureFor(data.MetallicTexture, Texture.White));
+        material.Set("g_tPacked", TextureFor(data.PackedTexture, Texture.White));
+        material.Set("g_flPackedPbr", data.CharacterPackedLayout && data.UsePackedPbr && data.PackedTexture is not null ? 1f : 0f);
         material.Set("g_tOpacity", TextureFor(data.OpacityTexture, Texture.White));
         material.Set("g_tEmissive", TextureFor(data.EmissiveTexture, Texture.Black));
         material.Set("g_vTint", new Vector4(data.Tint.X, data.Tint.Y, data.Tint.Z, data.Tint.W));

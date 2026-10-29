@@ -66,7 +66,7 @@ internal sealed partial class NativePedestrian
         }
         else
         {
-            var spine = bones.GetBone("Spine1") ?? bones.GetBone("Spine");
+            var spine = bones.GetBone("Spine1") ?? bones.GetBone("Spine_2") ?? bones.GetBone("Spine");
             if (spine is null) return;
             var pivot = pose[spine.Index].Position;
             var wrist = pose[hand.Index];

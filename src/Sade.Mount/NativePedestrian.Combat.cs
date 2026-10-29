@@ -183,7 +183,7 @@ internal sealed partial class NativePedestrian
         NativePedestrian? nearest = null;
         foreach (var peer in Peers)
         {
-            if (!peer.IsValid() || !peer.Active || peer == this || peer.IsDead || !WeaponMechanics.AreRivals(
+            if (!peer.IsValid() || !peer.Active || peer == this || peer.IsDead || peer.IsPosed || !WeaponMechanics.AreRivals(
                 Profile.Faction, Profile.EnemyFactions, peer.Profile.Faction, peer.Profile.EnemyFactions)) continue;
             var distance = Vector3.DistanceBetween(WorldPosition, peer.WorldPosition);
             if (distance >= range || !HasLineOfSight(peer.GameObject, TargetPosition(peer.GameObject))) continue;
@@ -200,7 +200,8 @@ internal sealed partial class NativePedestrian
     private bool ValidCombatTarget(GameObject? target)
     {
         if (!target.IsValid() || !target.Active || target.Scene != Scene || InHierarchy(target, GameObject)) return false;
-        return target.GetComponentInParent<NativePedestrian>() is not { IsDead: true };
+        var pedestrian = target.GetComponentInParent<NativePedestrian>();
+        return pedestrian is not { IsDead: true } && pedestrian is not { IsPosed: true };
     }
 
     private static bool InHierarchy(GameObject? child, GameObject parent) => child.IsValid() && (child == parent || child.IsAncestor(parent));
@@ -337,7 +338,7 @@ internal sealed partial class NativePedestrian
     // still reads the most recently available pose for shot origins; visuals must follow the new pose.
     internal void SyncWeaponPose()
     {
-        UpdateAimingPose();
+        if (!IsPosed) UpdateAimingPose();
         UpdateHeldWeapon();
     }
 

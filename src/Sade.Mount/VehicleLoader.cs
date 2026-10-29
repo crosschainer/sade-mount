@@ -10,7 +10,7 @@ internal sealed class VehicleLoader(VehicleData data) : ResourceLoader<SadeMount
 
     protected override object Load()
     {
-        var path = Host.ModelPath(data.ModelId);
+        var path = SadeMount.VehicleBodyPath(data);
         var model = Model.Load(path);
         if (model is null || model.IsError) throw new InvalidDataException($"Could not build vehicle {data.Id}.");
         var profile = new VehicleRuntime.Profile(data, path, data.WheelModelId is null ? null : Host.ModelPath(data.WheelModelId));
@@ -45,13 +45,25 @@ internal sealed class VehicleLoader(VehicleData data) : ResourceLoader<SadeMount
 
 public sealed partial class SadeMount
 {
+    internal static string VehicleBodyPath(VehicleData data) => $"mount://sade/vehicle_bodies/{data.Id}.vmdl";
+    internal void RegisterVehicleModel(Model model, string path, VehicleData data)
+    {
+        var profile = new VehicleRuntime.Profile(data, VehicleBodyPath(data), data.WheelModelId is null ? null : ModelPath(data.WheelModelId));
+        VehicleRuntime.Register(path, profile);
+        VehicleRuntime.Register(model.Name, profile);
+    }
+
     private void RegisterVehicles(MountContext context)
     {
         var featured = new HashSet<string>(["infernus", "savanna", "bmx", "nrg500", "squalo", "dodo", "maverick"], StringComparer.OrdinalIgnoreCase);
         foreach (var data in Reader.GetVehicles())
         {
             var modelPath = ModelPath(data.ModelId);
-            VehicleRuntime.Register(modelPath, new VehicleRuntime.Profile(data, modelPath, data.WheelModelId is null ? null : ModelPath(data.WheelModelId)));
+            var profile = new VehicleRuntime.Profile(data, VehicleBodyPath(data), data.WheelModelId is null ? null : ModelPath(data.WheelModelId));
+            VehicleRuntime.Register(modelPath, profile);
+            VehicleRuntime.Register(VehicleBodyPath(data), profile);
+            var bodyLoader = new ModelLoader(data.ModelId, previewWheels: false) { Flags = ResourceFlags.DeveloperOnly };
+            context.Add(ResourceType.Model, $"vehicle_bodies/{data.Id}", bodyLoader);
             var loader = new VehicleLoader(data);
             context.Add(ResourceType.PrefabFile, $"vehicles/{data.Family}/{data.Id}", loader);
             context.Add(ResourceType.Model, $"vehicles/{data.Family}/{data.Id}", new AliasLoader(modelPath));

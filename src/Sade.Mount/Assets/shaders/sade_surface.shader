@@ -48,18 +48,21 @@ PS
     CreateInputTexture2D(TextureNormal, Linear, 8, "", "_normal", "Material", Default4(0.5,0.5,1,1));
     CreateInputTexture2D(TextureRoughness, Linear, 8, "", "_roughness", "Material", Default(1));
     CreateInputTexture2D(TextureMetalness, Linear, 8, "", "_metalness", "Material", Default(1));
+    CreateInputTexture2D(TexturePacked, Linear, 8, "", "_packed", "Material", Default3(1,1,1));
     CreateInputTexture2D(TextureOpacity, Linear, 8, "", "_opacity", "Material", Default(1));
     CreateInputTexture2D(TextureEmissive, Srgb, 8, "", "_emissive", "Material", Default3(0,0,0));
     Texture2D g_tColor < Channel(RGBA, Box(TextureColor), Srgb); OutputFormat(BC7); SrgbRead(true); >;
     Texture2D g_tNormal < Channel(RGBA, Box(TextureNormal), Linear); OutputFormat(BC7); SrgbRead(false); >;
     Texture2D g_tRoughness < Channel(R, Box(TextureRoughness), Linear); OutputFormat(BC7); SrgbRead(false); >;
     Texture2D g_tMetalness < Channel(R, Box(TextureMetalness), Linear); OutputFormat(BC7); SrgbRead(false); >;
+    Texture2D g_tPacked < Channel(RGB, Box(TexturePacked), Linear); OutputFormat(BC7); SrgbRead(false); >;
     Texture2D g_tOpacity < Channel(R, Box(TextureOpacity), Linear); OutputFormat(BC7); SrgbRead(false); >;
     Texture2D g_tEmissive < Channel(RGB, Box(TextureEmissive), Srgb); OutputFormat(BC7); SrgbRead(true); >;
     SamplerState TextureFiltering < Filter(ANISOTROPIC); MaxAniso(8); AddressU(WRAP); AddressV(WRAP); >;
     float4 g_vTint < Default4(1,1,1,1); >;
     float g_flRoughness < Default(0.7); >;
     float g_flMetalness < Default(0); >;
+    float g_flPackedPbr < Default(0); >;
     float g_flOpacity < Default(1); >;
     #define MATERIAL_ALPHA_TEXTURE g_tColor
     TextureAttribute(RepresentativeTexture, g_tColor);
@@ -77,9 +80,17 @@ PS
         m.Albedo = color.rgb * g_vTint.rgb * i.vVertexColor.rgb;
         m.AmbientOcclusion = saturate(i.vSadeColor.r);
         m.Opacity = color.a * g_vTint.a * g_flOpacity * g_tOpacity.Sample(TextureFiltering, uv).r;
-        m.Normal = TransformNormal(normalTs, i.vNormalWs, i.vTangentUWs, i.vTangentVWs);
-        m.Roughness = saturate(g_flRoughness * g_tRoughness.Sample(TextureFiltering, uv).r);
-        m.Metalness = saturate(g_flMetalness * g_tMetalness.Sample(TextureFiltering, uv).r);
+        // Imported Unreal tangents already include their authored V sign (and the Y reflection).
+        // TransformNormal applies an additional Source1 normal-map Y flip; bypass it here so
+        // the cooked BC5 normal reconstructs the same surface normal as the original game.
+        m.Normal = normalize(normalTs.x * normalize(i.vTangentUWs)
+                           + normalTs.y * normalize(i.vTangentVWs)
+                           + normalTs.z * normalize(i.vNormalWs));
+        // DE character packed maps: R = metallic mask, G = roughness.
+        // B is a skin/hair scattering mask, not ambient occlusion.
+        float2 packed = g_tPacked.Sample(TextureFiltering, uv).rg;
+        m.Roughness = saturate(g_flRoughness * lerp(g_tRoughness.Sample(TextureFiltering, uv).r, packed.g, g_flPackedPbr));
+        m.Metalness = saturate(g_flMetalness * lerp(g_tMetalness.Sample(TextureFiltering, uv).r, packed.r, g_flPackedPbr));
         m.Emission = g_tEmissive.Sample(TextureFiltering, uv).rgb;
         return ShadingModelStandard::Shade(m);
     }

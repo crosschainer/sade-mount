@@ -58,8 +58,21 @@ public static class AnimationBinder
             }
             else if (!names.TryGetValue(canonical, out boneIndex))
             {
-                if (track.BoneTag is not { } tag || !PedBoneNames.TryGetValue(tag, out var alias) || !names.TryGetValue(alias, out boneIndex)) continue;
+                if (track.BoneTag is not { } tag || !PedBoneNames.TryGetValue(tag, out var alias)) continue;
+                if (!names.TryGetValue(alias, out boneIndex))
+                {
+                    // CJ's combined mesh labels the same spine chain Spine_1 / Spine_2.
+                    var playerAlias = tag == 2 ? "Spine_1" : tag == 3 ? "Spine_2" : "";
+                    if (!names.TryGetValue(playerAlias, out boneIndex)) continue;
+                }
             }
+            // DE's modular CJ rig repurposes the breast bones as upper-arm helpers.
+            // Classic breast tracks belong to the torso rig, not these near-identity
+            // children. In the combined mesh the left helper also carries arm weights.
+            var target = model.Bones[boneIndex];
+            if (track.BoneTag is 301 or 302 && target.Parent >= 0 &&
+                model.Bones[target.Parent].Name.Equals(track.BoneTag == 301 ? "R_UpperArm" : "L_UpperArm", StringComparison.OrdinalIgnoreCase))
+                continue;
             if (!assignments.TryAdd(boneIndex, track)) throw new InvalidDataException($"Clip '{clip.Name}' maps multiple tracks to '{model.Bones[boneIndex].Name}'.");
         }
         if (assignments.Count == 0) throw new InvalidDataException($"Clip '{clip.Name}' has no bones compatible with '{model.Id}'.");
@@ -73,7 +86,7 @@ public static class AnimationBinder
         // Classic pedestrian IFPs use +Y forward and carry a quarter-turn in their root pose.
         // DE's pedestrian reference meshes face +X. Convert the entire root trajectory together,
         // retaining heading changes inside the animation rather than flattening every root yaw.
-        var rootBasis = names.ContainsKey("Root") && names.ContainsKey("Pelvis")
+        var rootBasis = (names.ContainsKey("Root") || names.ContainsKey("Normal")) && names.ContainsKey("Pelvis")
             ? Quaternion.CreateFromAxisAngle(Vector3.UnitZ, MathF.PI / 2) : Quaternion.Identity;
         var rootSpeed = 0f;
         Vector3? rootStart = null;

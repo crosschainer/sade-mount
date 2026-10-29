@@ -72,6 +72,9 @@ public sealed record MaterialData
     public string? NormalTexture { get; init; }
     public string? RoughnessTexture { get; init; }
     public string? MetallicTexture { get; init; }
+    public string? PackedTexture { get; init; }
+    public bool CharacterPackedLayout { get; init; }
+    public bool UsePackedPbr { get; init; }
     public string? OpacityTexture { get; init; }
     public string? EmissiveTexture { get; init; }
     public Vector4 Tint { get; init; } = Vector4.One;

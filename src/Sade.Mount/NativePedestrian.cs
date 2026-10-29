@@ -31,7 +31,7 @@ internal sealed partial class NativePedestrian : Component, Component.IDamageabl
     private string healthTag = "";
     private bool hasTarget;
     private bool running;
-    private bool walking;
+    private readonly LocomotionPlayback locomotion = new();
     private bool shuttingDown;
     private bool initialized;
     private bool usedNavigation;
@@ -58,6 +58,8 @@ internal sealed partial class NativePedestrian : Component, Component.IDamageabl
         wait = Game.Random.Float(0.5f, 2.5f);
         initialized = true;
         EnsureCollider();
+        InitializePosing();
+        if (UpdatePosing()) return;
         if (IsDead) ShowDeath(true);
         else UpdateAnimation(0);
     }
@@ -65,6 +67,7 @@ internal sealed partial class NativePedestrian : Component, Component.IDamageabl
     internal void Tick(float delta)
     {
         if (!initialized || shuttingDown || !Agent.IsValid || !Renderer.IsValid) return;
+        if (UpdatePosing()) return;
         if (Tags.Has("sade_dead") && !IsDead)
         {
             Health = 0;
@@ -83,7 +86,7 @@ internal sealed partial class NativePedestrian : Component, Component.IDamageabl
         {
             var ownsProxyMovement = false;
             UpdateCombat(delta, ref ownsProxyMovement);
-            UpdateAnimation(speed);
+            UpdateAnimation(speed, delta);
             return;
         }
 
@@ -99,7 +102,7 @@ internal sealed partial class NativePedestrian : Component, Component.IDamageabl
         UpdateCombat(delta, ref ownsMovement);
         if (!ownsMovement) Wander(delta);
         AdvanceMovement(delta);
-        UpdateAnimation(speed);
+        UpdateAnimation(speed, delta);
     }
 
     private void Wander(float delta)
@@ -124,7 +127,7 @@ internal sealed partial class NativePedestrian : Component, Component.IDamageabl
 
     internal bool NavigateTo(Vector3 destination, bool run = false)
     {
-        if (IsDead || IsProxy || !Scene.NavMesh.IsEnabled) return false;
+        if (IsDead || IsPosed || IsProxy || !Scene.NavMesh.IsEnabled) return false;
         if (!float.IsFinite(destination.x) || !float.IsFinite(destination.y) || !float.IsFinite(destination.z)) return false;
         running = run && sequences.ContainsKey(Profile.Run);
         Agent.MaxSpeed = running ? Positive(Profile.RunSpeed, 100) : Positive(Profile.WalkSpeed, 45);
@@ -178,6 +181,7 @@ internal sealed partial class NativePedestrian : Component, Component.IDamageabl
 
     internal void Face(Vector3 position, float delta)
     {
+        if (IsPosed) return;
         var direction = (position - WorldPosition).WithZ(0);
         if (direction.Length < 0.01f) return;
         WorldRotation = Rotation.Lerp(WorldRotation, Rotation.LookAt(direction.Normal), Math.Clamp(delta * 9, 0, 1));
@@ -185,7 +189,7 @@ internal sealed partial class NativePedestrian : Component, Component.IDamageabl
 
     internal bool PlayAction(string clip, bool loop = false, float seconds = 0)
     {
-        if (!Renderer.IsValid || !sequences.TryGetValue(clip, out var resolved)) return false;
+        if (IsPosed || !Renderer.IsValid || !sequences.TryGetValue(clip, out var resolved)) return false;
         action = resolved;
         Renderer.UseAnimGraph = false;
         Renderer.Sequence.Looping = loop;
@@ -204,19 +208,23 @@ internal sealed partial class NativePedestrian : Component, Component.IDamageabl
         actionTime = 0;
     }
 
-    private void UpdateAnimation(float speed)
+    private void UpdateAnimation(float speed, float delta = 0)
     {
+        locomotion.Update(speed, delta, Positive(Profile.WalkSpeed, 45), running);
         if (action is not null && actionTime > 0) return;
-        walking = speed > (walking ? 1.5f : 3);
-        var run = walking && (running || speed > Positive(Profile.WalkSpeed, 45) * 1.5f) && sequences.ContainsKey(Profile.Run);
+        var walking = locomotion.Walking;
+        var run = locomotion.Running && sequences.ContainsKey(Profile.Run);
         var desired = walking ? run ? Profile.Run : Profile.Walk : Profile.Idle;
         if (!sequences.TryGetValue(desired, out var clip)) return;
         Renderer.UseAnimGraph = false;
-        Renderer.Sequence.Looping = true;
-        Renderer.Sequence.Blending = true;
-        if (Renderer.Sequence.Name != clip) Renderer.Sequence.Name = clip;
+        if (Renderer.Sequence.Name != clip)
+        {
+            Renderer.Sequence.Looping = true;
+            Renderer.Sequence.Blending = true;
+            Renderer.Sequence.Name = clip;
+        }
         var reference = run ? Positive(Profile.RunSpeed, 100) : Positive(Profile.WalkSpeed, 45);
-        Renderer.PlaybackRate = walking ? Math.Clamp(speed / reference, 0.15f, 3) : 1;
+        Renderer.PlaybackRate = walking ? Math.Clamp(locomotion.Speed / reference, 0.15f, 3) : 1;
     }
 
     public void OnDamage(in DamageInfo damage)
@@ -227,19 +235,20 @@ internal sealed partial class NativePedestrian : Component, Component.IDamageabl
         if (healthTag.Length > 0) Tags.Remove(healthTag);
         healthTag = "sade_health_" + Health.ToString("0.###", CultureInfo.InvariantCulture);
         Tags.Add(healthTag);
-        ReceiveCombatDamage(damage);
+        if (!IsPosed) ReceiveCombatDamage(damage);
         if (IsDead)
         {
             Tags.Add("sade_dead");
             ShowDeath(false);
         }
-        else PlayAction(Profile.HitSequence, seconds: 0.3f);
+        else if (!IsPosed) PlayAction(Profile.HitSequence, seconds: 0.3f);
     }
 
     private void ShowDeath(bool restoring)
     {
         StopMoving();
         StopCombat();
+        if (IsPosed) return;
         if (PlayAction(Profile.DeathSequence, seconds: float.MaxValue))
         {
             if (restoring && Renderer.SceneModel.IsValid()) Renderer.Sequence.TimeNormalized = 1;
