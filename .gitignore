@@ -14,5 +14,6 @@
 **/Assets/**/*.vmat_c
 **/Assets/**/*.vtex_c
 **/Assets/**/*.scene_c
+**/Assets/**/*.scene_d
 **/Assets/**/*.prefab_c
 **/Assets/**/*.generated.*
