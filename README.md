@@ -23,13 +23,13 @@ When updating, close s&box and replace the `sade` folder with the new release. K
 
 ## See it in Sandbox
 
-Click a thumbnail to watch the recorded gameplay.
+Click a preview to download the MP4 recording.
 
 | Pedestrians and gang fights · 47 seconds | Car driving · 8 seconds |
 | --- | --- |
-| [![Watch pedestrians and gang fights](docs/images/pedestrians-preview.jpg)](https://github.com/crosschainer/sade-mount/blob/main/docs/videos/pedestrians.mp4) | [![Watch car driving](docs/images/car-driving-preview.jpg)](https://github.com/crosschainer/sade-mount/blob/main/docs/videos/car-driving.mp4) |
+| [![Download pedestrians and gang fights](docs/images/pedestrians-preview.jpg)](https://raw.githubusercontent.com/crosschainer/sade-mount/main/docs/videos/pedestrians.mp4) | [![Download car driving](docs/images/car-driving-preview.jpg)](https://raw.githubusercontent.com/crosschainer/sade-mount/main/docs/videos/car-driving.mp4) |
 | **Motorcycle riding · 8 seconds** | **Helicopter flight · 25 seconds** |
-| [![Watch motorcycle riding](docs/images/motorcycle-riding-preview.jpg)](https://github.com/crosschainer/sade-mount/blob/main/docs/videos/motorcycle-riding.mp4) | [![Watch helicopter flight](docs/images/helicopter-flight-preview.jpg)](https://github.com/crosschainer/sade-mount/blob/main/docs/videos/helicopter-flight.mp4) |
+| [![Download motorcycle riding](docs/images/motorcycle-riding-preview.jpg)](https://raw.githubusercontent.com/crosschainer/sade-mount/main/docs/videos/motorcycle-riding.mp4) | [![Download helicopter flight](docs/images/helicopter-flight-preview.jpg)](https://raw.githubusercontent.com/crosschainer/sade-mount/main/docs/videos/helicopter-flight.mp4) |
 
 ## What's included
 
