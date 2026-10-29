@@ -95,7 +95,7 @@ public sealed partial class GameReader
                 RoughnessTexture = Texture("Roughness"), MetallicTexture = Texture("Metallic"), OpacityTexture = Texture("Opacity") ?? result.OpacityTexture,
                 Roughness = defaults.Scalars.GetValueOrDefault("Roughness", result.Roughness), Metallic = defaults.Scalars.GetValueOrDefault("Metallic", result.Metallic),
                 Opacity = defaults.Scalars.GetValueOrDefault("OpacityMult", result.Opacity) };
-            if (defaults.Colors.TryGetValue("ColorMult", out var tint)) result = result with { Tint = new(tint.R, tint.G, tint.B, 1) };
+            if (defaults.Colors.TryGetValue("ColorMult", out var tint)) result = result with { Tint = new(tint.R, tint.G, tint.B, source.Name == "M_Environment" ? tint.A : 1) };
         }
         if (source is UMaterialInstanceConstant material)
         {
@@ -131,9 +131,13 @@ public sealed partial class GameReader
                     _ => result
                 };
             }
+            // M_Environment feeds ColorMult alpha into its masked/dithered opacity. In
+            // particular MI_TransparentCar sets RGBA=0 to hide auxiliary chassis geometry.
+            // Other master-material families retain their existing RGB-only tint semantics.
+            var environmentAlpha = visited.Any(path => path.EndsWith("/M_Environment.M_Environment", StringComparison.OrdinalIgnoreCase));
             foreach (var value in material.VectorParameterValues)
                 if (value.ParameterValue is { } color && value.Name.ToLowerInvariant() is "colormult" or "basecolor" or "diffusecolor" or "tint")
-                    result = result with { Tint = new Vector4(color.R, color.G, color.B, 1) };
+                    result = result with { Tint = new Vector4(color.R, color.G, color.B, environmentAlpha && value.Name.Equals("ColorMult", StringComparison.OrdinalIgnoreCase) ? color.A : 1) };
             // Overrides are sparse: the struct's default values must not erase inherited properties.
             if (material.GetOrDefault<CUE4Parse.UE4.Assets.Objects.FStructFallback>("BasePropertyOverrides") is { } overrides)
             {

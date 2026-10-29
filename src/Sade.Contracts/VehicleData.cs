@@ -12,7 +12,10 @@ public sealed record VehicleData(string Id, string Name, string ModelId, string 
     public Vector3 CenterOfMass { get; init; }
     public float MaxSpeed { get; init; }
     public float EngineAcceleration { get; init; }
+    public int GearCount { get; init; } = 5;
+    public float EngineInertia { get; init; } = 15;
     public float BrakeDeceleration { get; init; }
+    public float BrakeBias { get; init; } = .5f;
     public float Traction { get; init; }
     public float TractionLoss { get; init; }
     public float SteeringLockDegrees { get; init; }

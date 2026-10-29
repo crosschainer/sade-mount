@@ -1,6 +1,6 @@
 // Trusted run_csharp integration script. Requires the current mount and an offline editor.
 // Exercises real engine chair/movement behavior in an isolated scene, without changing the active camera.
-if (Networking.IsActive) throw new Exception("Run the offline seat regression before connecting a network session.");
+var offline = !Networking.IsActive;
 var assembly = AppDomain.CurrentDomain.GetAssemblies().Single(a => a.GetName().Name == "sade");
 var seating = assembly.GetType("Sade.Mount.VehicleSeats")!;
 var runtime = assembly.GetType("Sade.Mount.VehicleRuntime")!;
@@ -38,11 +38,11 @@ try
     var driver = CreatePlayer("Seat regression driver", new Vector3(-140, 0, 3));
     var passenger = CreatePlayer("Seat regression passenger", new Vector3(140, 0, 3));
     Step(3);
-    if (!(bool)enter.Invoke(null, [driverSeat, driver])!) throw new Exception("Offline driver entry rejected.");
+    if (!Enter(driverSeat, driver)) throw new Exception("Driver entry rejected.");
     Step(20);
     CheckSeated(driver, driverSeat);
-    if ((bool)enter.Invoke(null, [driverSeat, passenger])!) throw new Exception("Occupied driver seat was stolen.");
-    if (!(bool)enter.Invoke(null, [passengerSeat, passenger])!) throw new Exception("Offline passenger entry rejected.");
+    if (Enter(driverSeat, passenger)) throw new Exception("Occupied driver seat was stolen.");
+    if (!Enter(passengerSeat, passenger)) throw new Exception("Passenger entry rejected.");
     Step(20);
     CheckSeated(passenger, passengerSeat);
     if (!ReferenceEquals(nativeType.GetProperty("Driver", members)!.GetValue(native), driver)) throw new Exception("Passenger replaced the driver.");
@@ -62,7 +62,8 @@ try
             ?? throw new Exception("Current prefab is missing its selected-exit anchor.");
         anchor.WorldPosition = point;
         chair.ExitPoints = [anchor];
-        leave.Invoke(null, [chair, player]);
+        if (offline) leave.Invoke(null, [chair, player]);
+        else chair.Eject(player);
         Step(5);
         if (chair.IsOccupied || player.GetComponentInParent<Sandbox.Movement.ISitTarget>() is not null || player.Mode is Sandbox.Movement.SitMoveMode || !player.Body.Enabled || !player.ColliderObject.Enabled)
             throw new Exception($"{player.GameObject.Name}: exit did not restore walking: occupied={chair.IsOccupied}, parent={player.GameObject.Parent?.Name}, mode={player.Mode?.GetType().Name}, body={player.Body.Enabled}, collider={player.ColliderObject.Enabled}.");
@@ -72,7 +73,19 @@ try
     if (nativeType.GetProperty("Driver", members)!.GetValue(native) is not null) throw new Exception("Driver retained after leaving.");
     if (!driverSeat.CanPress(new Component.IPressable.Event(passenger))) throw new Exception("Vacated driver seat remains unavailable.");
     if (activeScene?.Camera != activeCamera) throw new Exception("Seat test changed the active scene camera.");
-    return new { Passed = true, occupiedState, Exits = exits };
+    return new { Passed = true, occupiedState, Exits = exits,
+        Scope = offline ? "Offline native entry/exit and engine sitting." : "Isolated engine Sit/Eject and clearance; live network RPC/ownership is not tested." };
+
+    bool Enter(BaseChair chair, PlayerController player)
+    {
+        if (offline) return (bool)enter.Invoke(null, [chair, player])!;
+        // The active game can have networking without these disposable test players having
+        // network owners. Exercise the actual engine chair locally without spawning any network object.
+        if (!chair.CanPress(new Component.IPressable.Event(player))) return false;
+        if (!player.GetComponent<Sandbox.Movement.SitMoveMode>().IsValid()) player.Components.Create<Sandbox.Movement.SitMoveMode>();
+        chair.Sit(player);
+        return true;
+    }
 
     PlayerController CreatePlayer(string name, Vector3 position)
     {

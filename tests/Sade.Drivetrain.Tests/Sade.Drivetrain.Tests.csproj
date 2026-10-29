@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup><Compile Include="../../src/Sade.Mount/VehicleDrivetrain.cs" Link="VehicleDrivetrain.cs" /></ItemGroup>
+</Project>
