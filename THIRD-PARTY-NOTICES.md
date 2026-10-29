@@ -20,4 +20,6 @@ The project builds against your installed s&box version. The build/install scrip
 
 ## Game data and decoder
 
+The factual vehicle audio-bank and speech-context mappings were checked with the [gta-reversed project](https://github.com/gta-reversed/gta-reversed). The speech table records its pinned references in `src/Sade.Formats/Data/SpeechContexts.sources.txt`; vehicle mappings cite their source in `VehicleAudioBanks.cs`. Playback and behavior are implemented here, and recordings are read from the installed game.
+
 Grand Theft Auto: San Andreas — The Definitive Edition data stays in your game installation. No Rockstar game models, textures, animations, audio, archive files, or Oodle decoder DLL are distributed with this repository. The reader opens the installed game and loads its decoder from that installation. Rockstar, GTA, Unreal Engine, and Oodle names identify their respective third-party products; this project is not an official release of those products.

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using Sade.Contracts;
 
 namespace Sade.Formats;
@@ -6,6 +7,7 @@ namespace Sade.Formats;
 public sealed record PedDefinition(int Id, string Model, string TextureDictionary, string Group)
 {
     public string PedType { get; init; } = "CIVMALE";
+    public PedestrianSpeechData? Speech { get; init; }
 }
 public sealed record PedAnimationGroup(string Name, string Bank, string Type, string[] Clips);
 
@@ -31,7 +33,13 @@ public sealed class PedMetadata
             var fields = line.Split(',', StringSplitOptions.TrimEntries);
             if (fields.Length < 6 || !int.TryParse(fields[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var id))
                 throw new InvalidDataException($"Invalid pedestrian definition: {line}");
-            var definition = new PedDefinition(id, fields[1], fields[2], fields[5]) { PedType = fields[3].ToUpperInvariant() };
+            // Some shipped rows omit a comma immediately before PED_TYPE_GEN.
+            // Voice identifiers are unambiguous even in those legacy rows.
+            var voiceNames = Regex.Matches(line, @"\bVOICE_[A-Z0-9_]+\b", RegexOptions.IgnoreCase);
+            var pedType = fields[3].ToUpperInvariant();
+            var speech = voiceNames.Count >= 2 ? SpeechCatalog.Resolve(voiceNames[0].Value, voiceNames[1].Value,
+                pedType is "CIVFEMALE" or "PROSTITUTE") : null;
+            var definition = new PedDefinition(id, fields[1], fields[2], fields[5]) { PedType = pedType, Speech = speech };
             if (!definitions.TryAdd(definition.Model, definition)) throw new InvalidDataException($"Duplicate pedestrian '{definition.Model}'.");
         }
         var groups = new Dictionary<string, PedAnimationGroup>(StringComparer.OrdinalIgnoreCase);
@@ -70,7 +78,8 @@ public sealed class PedMetadata
         if (name.Equals("Player_Combined", StringComparison.OrdinalIgnoreCase))
             return new PedestrianPreset("CJ", "ifp:ped", "IDLE_stance", "WALK_player", "run_player", "player")
             {
-                Faction = "Grove", EnemyFactions = Hostilities.GetValueOrDefault("GANG2", [])
+                Faction = "Grove", EnemyFactions = Hostilities.GetValueOrDefault("GANG2", []),
+                Speech = SpeechCatalog.Resolve("VOICE_PLY_CR", "VOICE_PLY_CR")
             };
         string group, pedType;
         if (NamedPresets.TryGetValue(name, out var named)) { group = named.Group; pedType = named.PedType; }
@@ -81,8 +90,20 @@ public sealed class PedMetadata
             $"ifp:{animationGroup.Bank.ToLowerInvariant()}", animationGroup.Clips[3], animationGroup.Clips[0], animationGroup.Clips[1], group)
         {
             Faction = FactionForPedType(pedType),
-            EnemyFactions = Hostilities.GetValueOrDefault(pedType, [])
+            EnemyFactions = Hostilities.GetValueOrDefault(pedType, []),
+            Speech = Definitions.TryGetValue(name, out var source) ? source.Speech : NamedSpeech(name)
         };
+    }
+
+    private static PedestrianSpeechData? NamedSpeech(string name)
+    {
+        var voice = name.ToLowerInvariant() switch
+        {
+            "smoke" or "smokev" => "SMOKE", "sweet" => "SWEET",
+            "ryder" or "ryder2" or "ryder3" => "RYDER", "cesar" => "CESAR", "wuzimu" => "WOOZIE",
+            _ => null
+        };
+        return voice is null ? null : SpeechCatalog.Resolve("VOICE_GNG_" + voice, "VOICE_GNG_" + voice);
     }
 
     // Gang numbers are the original ePedType values, independently represented from:

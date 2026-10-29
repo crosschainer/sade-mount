@@ -98,7 +98,13 @@ public sealed record PedestrianPreset(string Name, string BankId, string Idle, s
 {
     public string Faction { get; init; } = "Civilian";
     public string[] EnemyFactions { get; init; } = [];
+    public PedestrianSpeechData? Speech { get; init; }
 }
+
+/// <summary>Original GTA speech bank and inclusive sample ranges; contains metadata only, never audio.</summary>
+public sealed record SpeechRangeData(string Context, int First, int Last, float CooldownSeconds);
+public sealed record SpeechVoiceData(string Id, string Bank, SpeechRangeData[] Contexts);
+public sealed record PedestrianSpeechData(SpeechVoiceData[] Voices, SpeechVoiceData PainVoice, bool Female);
 
 /// <summary>Installed weapon.dat standard-skill profile. Distances/offsets use Unreal centimeters; timing is seconds.</summary>
 public sealed record WeaponData(string Id, string Name, string ModelId, string FireSoundId, string? ReloadSoundId,

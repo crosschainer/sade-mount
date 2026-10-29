@@ -26,6 +26,8 @@ try
     var diagnostics = new List<Diagnostic>();
     var options = new ReaderOptions(game, cacheDirectory);
     var original = reader.Initialize(options, diagnostics.Add).ToArray();
+    SpeechTests.Run(reader, original);
+    if (args.Contains("--speech-only", StringComparer.Ordinal)) return;
     var fingerprint = reader.Fingerprint;
     var cachePath = Directory.GetFiles(cacheDirectory, "catalog-*.json").Single();
     var valid = File.ReadAllBytes(cachePath);

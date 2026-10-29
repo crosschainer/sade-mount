@@ -1,3 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup><ProjectReference Include="../Sade.Contracts/Sade.Contracts.csproj" /></ItemGroup>
+  <ItemGroup><EmbeddedResource Include="Data/SpeechContexts.tsv" /></ItemGroup>
 </Project>

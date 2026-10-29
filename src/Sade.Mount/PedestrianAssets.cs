@@ -25,6 +25,7 @@ public sealed partial class SadeMount
         var profile = new PedestrianRuntime.Profile(preset.Name, preset.Idle, preset.Walk, preset.Run, Speed(preset.Walk, 45), Speed(preset.Run, 120), preset.Faction)
         {
             EnemyFactions = preset.EnemyFactions,
+            Speech = preset.Speech,
             Weapon = weapon is null ? null : MakeWeaponProfile(weapon)
         };
         PedestrianRuntime.Register(model.Name, profile);

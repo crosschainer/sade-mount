@@ -21,6 +21,7 @@ internal static class PedestrianRuntime
         public string HitSequence { get; init; } = "HIT_front";
         public string DeathSequence { get; init; } = "KO_shot_front";
         public string[] EnemyFactions { get; init; } = [];
+        public Sade.Contracts.PedestrianSpeechData? Speech { get; init; }
     }
 
     internal sealed record WeaponProfile(string Name, string ModelPath, string SoundPath,

@@ -57,6 +57,7 @@ internal sealed partial class NativePedestrian : Component, Component.IDamageabl
         foreach (var name in renderer.Model.AnimationNames) sequences.TryAdd(name, name);
         wait = Game.Random.Float(0.5f, 2.5f);
         initialized = true;
+        InitializeSpeech();
         EnsureCollider();
         InitializePosing();
         if (UpdatePosing()) return;
@@ -68,6 +69,7 @@ internal sealed partial class NativePedestrian : Component, Component.IDamageabl
     {
         if (!initialized || shuttingDown || !Agent.IsValid || !Renderer.IsValid) return;
         if (UpdatePosing()) return;
+        UpdateSpeech(delta);
         if (Tags.Has("sade_dead") && !IsDead)
         {
             Health = 0;
@@ -241,11 +243,19 @@ internal sealed partial class NativePedestrian : Component, Component.IDamageabl
             Tags.Add("sade_dead");
             ShowDeath(false);
         }
-        else if (!IsPosed) PlayAction(Profile.HitSequence, seconds: 0.3f);
+        else if (!IsPosed)
+        {
+            PlayAction(Profile.HitSequence, seconds: 0.3f);
+            TrySpeak(damage.Damage >= 20 ? "PAIN_HIGH" : "PAIN_LOW", interrupt: true);
+        }
+        if (IsDead && damage.Attacker?.GetComponentInParent<NativePedestrian>() is { } killer
+            && WeaponMechanics.AreRivals(Profile.Faction, Profile.EnemyFactions, killer.Profile.Faction, killer.Profile.EnemyFactions))
+            killer.SpeakFirst("ENEMY_GANG_WASTED");
     }
 
     private void ShowDeath(bool restoring)
     {
+        StopSpeech();
         StopMoving();
         StopCombat();
         if (IsPosed) return;
@@ -261,6 +271,7 @@ internal sealed partial class NativePedestrian : Component, Component.IDamageabl
         }
         var collider = Components.Get<CapsuleCollider>(FindMode.EverythingInSelf);
         if (collider is not null) collider.Enabled = false;
+        if (!restoring) TrySpeak("PAIN_DEATH", interrupt: true);
     }
 
     private void EnsureCollider()
@@ -277,6 +288,7 @@ internal sealed partial class NativePedestrian : Component, Component.IDamageabl
     {
         if (shuttingDown) return;
         shuttingDown = true;
+        StopSpeech();
         StopMoving();
         StopCombat();
         Destroy();
@@ -285,6 +297,7 @@ internal sealed partial class NativePedestrian : Component, Component.IDamageabl
     protected override void OnDisabled()
     {
         if (!initialized) return;
+        StopSpeech();
         StopMoving();
         StopCombat();
     }
@@ -297,6 +310,7 @@ internal sealed partial class NativePedestrian : Component, Component.IDamageabl
     protected override void OnDestroy()
     {
         if (!initialized) return;
+        StopSpeech();
         StopCombat();
     }
 

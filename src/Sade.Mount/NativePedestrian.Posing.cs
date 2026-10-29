@@ -85,6 +85,7 @@ internal sealed partial class NativePedestrian
     {
         if (poseSuspended) return;
         poseSuspended = true;
+        StopSpeech();
         StopMoving();
         ClearAction();
         ClearAimOverrides();

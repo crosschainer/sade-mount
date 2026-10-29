@@ -32,6 +32,12 @@ internal static class NativeWeaponEffects
         Get(scene).Stream(attacker, weaponObject, weapon, origin, direction);
     }
 
+    internal static void Tracer(Scene scene, Vector3 origin, Vector3 hitPosition, bool shotgun)
+    {
+        if (!scene.IsValid || scene.IsEditor || Vector3.DistanceBetween(origin, hitPosition) < 2) return;
+        Get(scene).Tracer(origin, hitPosition, shotgun);
+    }
+
     internal static void Stop(Scene? scene = null)
     {
         foreach (var pair in scenes.ToArray())
@@ -72,6 +78,29 @@ internal static class NativeWeaponEffects
 
     private sealed record Visual(GameObject Object, float Expires);
 
+    private sealed class BulletTrail
+    {
+        internal required LineRenderer Line;
+        internal Vector3 Origin;
+        internal Vector3 Direction;
+        internal float Distance;
+        internal float Length;
+        internal float Duration;
+        internal float Age;
+        internal bool Fresh = true;
+
+        internal void UpdatePoints()
+        {
+            // Damage already used this exact ray. The visible streak travels along it and
+            // contracts at the hit point, including close walls and shotgun pellet hits.
+            var head = Length + Distance * Math.Clamp(Age / Duration, 0, 1);
+            var tail = Math.Clamp(head - Length, 0, Distance);
+            var tip = Math.Min(head, Distance);
+            for (var i = 0; i < Line.VectorPoints.Count; i++)
+                Line.VectorPoints[i] = Origin + Direction * (tail + (tip - tail) * i / (Line.VectorPoints.Count - 1));
+        }
+    }
+
     private sealed class State : IDisposable
     {
         private readonly Scene scene;
@@ -79,6 +108,7 @@ internal static class NativeWeaponEffects
         internal readonly List<Projectile> Projectiles = [];
         private readonly List<Area> areas = [];
         private readonly List<Visual> visuals = [];
+        private readonly List<BulletTrail> tracers = [];
         private readonly Dictionary<GameObject, (ParticleEffect Effect, float Until)> streams = [];
         private float age;
 
@@ -86,6 +116,42 @@ internal static class NativeWeaponEffects
         {
             this.scene = scene;
             hook = scene.AddHook(GameObjectSystem.Stage.FinishUpdate, -20, Update, "SADE", "Weapon projectiles and effects");
+        }
+
+        internal void Tracer(Vector3 origin, Vector3 hitPosition, bool shotgun)
+        {
+            // A large gang fight must not leave an unbounded pile of transient renderers.
+            if (tracers.Count >= 256)
+            {
+                if (tracers[0].Line.IsValid()) tracers[0].Line.GameObject.Destroy();
+                tracers.RemoveAt(0);
+            }
+            var distance = Vector3.DistanceBetween(origin, hitPosition);
+            var gameObject = new GameObject(scene, false, "SADE bullet tracer") { Flags = EffectFlags };
+            var line = gameObject.AddComponent<LineRenderer>();
+            line.UseVectorPoints = true;
+            // LineRenderer samples color/width at its points, so the interior points
+            // carry the bright center and tapered ends as well as the straight path.
+            line.VectorPoints = [origin, origin, origin, origin, origin];
+            line.Face = SceneLineObject.FaceMode.Camera;
+            line.Color = new Gradient(new Gradient.ColorFrame(0, new Color(1, .65f, .2f, 0)),
+                new Gradient.ColorFrame(.7f, new Color(1, .85f, .5f)),
+                new Gradient.ColorFrame(1, new Color(1, .97f, .85f)));
+            line.Width = new Curve(new Curve.Frame(0, 0),
+                new Curve.Frame(.75f, shotgun ? .25f : .45f), new Curve.Frame(1, .1f));
+            line.Opaque = false;
+            line.Additive = true;
+            line.Lighting = false;
+            line.CastShadows = false;
+            var trail = new BulletTrail
+            {
+                Line = line, Origin = origin, Direction = (hitPosition - origin) / distance,
+                Distance = distance, Length = Math.Min(distance, shotgun ? 64 : 144),
+                Duration = Math.Clamp(distance / 16000f, 0.045f, 0.12f)
+            };
+            trail.UpdatePoints();
+            gameObject.Enabled = true;
+            tracers.Add(trail);
         }
 
         internal void Launch(GameObject owner, PedestrianRuntime.WeaponProfile weapon, Vector3 origin, Vector3 target, GameObject? homingTarget)
@@ -111,6 +177,20 @@ internal static class NativeWeaponEffects
             var delta = Math.Clamp(Time.Delta, 0, 0.1f);
             if (delta <= 0) return;
             age += delta;
+            foreach (var tracer in tracers.ToArray())
+            {
+                // Shooting happens earlier in this update. Always allow its first render,
+                // even if a long frame exceeds the short tracer lifetime.
+                if (tracer.Fresh) { tracer.Fresh = false; continue; }
+                tracer.Age += delta;
+                if (!tracer.Line.IsValid() || tracer.Age >= tracer.Duration)
+                {
+                    if (tracer.Line.IsValid()) tracer.Line.GameObject.Destroy();
+                    tracers.Remove(tracer);
+                    continue;
+                }
+                tracer.UpdatePoints();
+            }
             foreach (var projectile in Projectiles.ToArray())
             {
                 if (!projectile.Object.IsValid() || !StepProjectile(projectile, delta))
@@ -319,9 +399,9 @@ internal static class NativeWeaponEffects
         public void Dispose()
         {
             hook.Dispose();
-            foreach (var gameObject in Projectiles.Select(p => p.Object).Concat(areas.Select(a => a.Object)).Concat(visuals.Select(v => v.Object)).Concat(streams.Values.Select(s => s.Effect.GameObject)))
+            foreach (var gameObject in Projectiles.Select(p => p.Object).Concat(areas.Select(a => a.Object)).Concat(visuals.Select(v => v.Object)).Concat(streams.Values.Select(s => s.Effect.GameObject)).Concat(tracers.Where(t => t.Line.IsValid()).Select(t => t.Line.GameObject)))
                 if (gameObject.IsValid()) gameObject.Destroy();
-            Projectiles.Clear(); areas.Clear(); visuals.Clear(); streams.Clear();
+            Projectiles.Clear(); areas.Clear(); visuals.Clear(); streams.Clear(); tracers.Clear();
         }
     }
 

@@ -192,6 +192,7 @@ internal sealed partial class NativePedestrian
         }
         if (!nearest.IsValid()) return;
         combatTarget = nearest.GameObject;
+        SpeakFirst("EYEING_PED_THREAT", "FIGHT");
         targetMemoryRemaining = 6;
         fireRemaining = 0.35f;
         pursuitRemaining = 0;
@@ -235,6 +236,8 @@ internal sealed partial class NativePedestrian
         }
         var origin = heldWeapon.IsValid() ? heldWeapon.WorldTransform.PointToWorld(weapon.MuzzleOffset) : WorldPosition + Vector3.Up * 48;
         var direction = (point - origin).Normal;
+        if (weapon.Kind is "melee" or "chainsaw") SpeakFirst("FIGHT");
+        else SpeakCombat(combatTarget?.GetComponentInParent<NativePedestrian>()?.Profile.Faction);
         switch (weapon.Kind)
         {
             case "melee":
@@ -265,6 +268,7 @@ internal sealed partial class NativePedestrian
                     var hit = Scene.Trace.Ray(origin, origin + shot * Math.Clamp(weapon.Range, 16, 12000))
                         .IgnoreGameObjectHierarchy(GameObject).UseHitboxes().Run();
                     ApplyWeaponHit(hit, origin, shot, weapon.Damage, "bullet");
+                    NativeWeaponEffects.Tracer(Scene, origin, hit.EndPosition, weapon.Kind == "shotgun");
                 }
                 muzzleRemaining = 0.045f;
                 if (muzzleLight.IsValid()) muzzleLight.Enabled = true;
@@ -277,7 +281,8 @@ internal sealed partial class NativePedestrian
             if (!continuousSound.IsValid() || !continuousSound.IsPlaying)
             {
                 continuousStartHandle = PlayWeaponSound(fireStartSound, origin, weapon.Pitch);
-                var startDuration = fireStartSound?.Duration ?? 0;
+                // Mounted audio can play before VSound_t metadata is available.
+                var startDuration = fireStartSound is { IsLoaded: true } ? fireStartSound.Duration : 0;
                 continuousSound = PlayWeaponSound(fireSound, origin, weapon.Pitch, Math.Clamp(startDuration / Math.Max(0.25f, weapon.Pitch), 0, 2));
             }
             if (continuousSound.IsValid()) continuousSound.Position = origin;

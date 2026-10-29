@@ -1,0 +1,15 @@
+SpeechContexts.tsv contains factual bank names, voice enumeration indices, inclusive
+sound-number ranges, and repetition intervals for selected GTA San Andreas speech
+contexts. It contains no recordings and no reverse-engineered implementation.
+
+Primary reference: gta-reversed contributors, commit
+e80afe41b7fed5c2f9f8bb2d87e0cc2466d5e1c1:
+https://github.com/gta-reversed/gta-reversed/blob/e80afe41b7fed5c2f9f8bb2d87e0cc2466d5e1c1/source/game_sa/Audio/Entities/PedSpeechAudioEntityLUTs.inc.h
+https://github.com/gta-reversed/gta-reversed/blob/e80afe41b7fed5c2f9f8bb2d87e0cc2466d5e1c1/source/game_sa/Audio/Enums/PedSpeechContexts.h
+https://github.com/gta-reversed/gta-reversed/blob/e80afe41b7fed5c2f9f8bb2d87e0cc2466d5e1c1/source/game_sa/Audio/Enums/PedSpeechVoices.h
+
+Voice assignments/ranges come from OriginalData/GTASA/data/peds.ide in the installed game.
+Named-character assignments correspond to the special-ped lookup in the first reference.
+Sample presence and OGG decoding are checked against the installed DE archives.
+Use is confined to contexts supported by the selected voice. Scripted mission/cutscene
+audio is not used for ambient or combat speech.
