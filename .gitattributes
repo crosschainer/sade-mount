@@ -1,0 +1,9 @@
+* text=auto
+*.cs text eol=lf
+*.csproj text eol=lf
+*.props text eol=lf
+*.ps1 text eol=lf
+*.md text eol=lf
+*.shader text eol=lf
+*.shader_c binary
+*.png binary

@@ -1,0 +1,77 @@
+// Run with the editor's run_csharp tool after loading the freshly built mount.
+// Uses temporary scenes/resources only and leaves the open scene untouched.
+var mount = AppDomain.CurrentDomain.GetAssemblies().Single(a => a.GetName().Name == "sade");
+var create = mount.GetType("Sade.Mount.StablePrefab", true).GetMethod("Create", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+const string path = "sade_validation/stable.prefab";
+PrefabFile prefab = null;
+Scene original = null;
+Scene restored = null;
+var stage = "initialization";
+PrefabFile Build()
+{
+    var builder = new Sandbox.Mounting.PrefabBuilder().WithName(path);
+    using (builder.Scope())
+    {
+        var root = new GameObject { Name = "Validation vehicle" };
+        var seat = new GameObject(root, true, "Driver seat");
+        var eyes = new GameObject(seat, true, "Seated eyes") { LocalPosition = Vector3.Up * 60 };
+        var exit = new GameObject(root, true, "Door exit") { LocalPosition = Vector3.Left * 80 };
+        var chair = seat.Components.Create<BaseChair>();
+        chair.SeatPosition = seat;
+        chair.EyePosition = eyes;
+        chair.ExitPoints = new[] { exit };
+    }
+    return (PrefabFile)create.Invoke(null, new object[] { builder, path });
+}
+try
+{
+    stage = "first build";
+    prefab = Build();
+    var before = prefab.RootObject.ToJsonString();
+    var id = prefab.RootObject["__guid"].GetValue<Guid>();
+    original = new Scene();
+    System.Text.Json.Nodes.JsonObject saved;
+    using (original.Push())
+    {
+        stage = "clone first prefab";
+        var instance = GameObject.Clone(prefab, new CloneConfig { Transform = new Transform(new Vector3(120, 340, 56)), Name = "Saved vehicle" });
+        if (instance is null) throw new Exception("GameObject.Clone returned null.");
+        instance.Name = "Saved vehicle";
+        instance.Children[0].Name = "Saved driver seat";
+        stage = "serialize clone";
+        saved = instance.Serialize();
+    }
+    original.Destroy(); original = null;
+    stage = "second build";
+    prefab = Build();
+    if (before != prefab.RootObject.ToJsonString()) throw new Exception("Prefab identities changed after rebuilding.");
+    stage = "check GUID registry";
+    var find = typeof(PrefabFile).GetMethod("FindByGuid", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+    if (find is null) throw new Exception("Installed PrefabFile.FindByGuid API missing.");
+    if (!ReferenceEquals(find.Invoke(null, new object[] { id }), prefab)) throw new Exception("Prefab GUID registry was not refreshed.");
+    restored = new Scene();
+    using (restored.Push())
+    {
+        var instance = new GameObject();
+        stage = "deserialize saved scene instance";
+        instance.Deserialize(saved);
+        if ((instance.WorldPosition - new Vector3(120, 340, 56)).Length > .001f || instance.Name != "Saved vehicle")
+            throw new Exception("Saved prefab root overrides failed after rebuilding.");
+        stage = "verify chair references";
+        var seat = instance.Children.Single(x => x.Name == "Saved driver seat");
+        var chair = seat.Components.Get<BaseChair>(FindMode.EverythingInSelf);
+        if (chair is null) throw new Exception("Restored chair component missing: " + string.Join(",", seat.Components.GetAll<Component>(FindMode.EverythingInSelf).Select(x => x.GetType().FullName)));
+        if (chair.SeatPosition != seat || chair.EyePosition?.Name != "Seated eyes" || chair.ExitPoints?.SingleOrDefault() != instance.Children.Single(x => x.Name == "Door exit"))
+            throw new Exception($"Saved chair references failed: seat={chair.SeatPosition?.Name}, eyes={chair.EyePosition?.Name}, exit={chair.ExitPoints?.FirstOrDefault()?.Name}.");
+        return new { Passed = true, RootGuid = id, instance.WorldPosition, instance.Name, Seat = seat.Name, Eyes = chair.EyePosition.Name };
+    }
+}
+catch (Exception error)
+{
+    return new { Passed = false, Stage = stage, Error = error.ToString(), exchangeDirectory };
+}
+finally
+{
+    original?.Destroy(); restored?.Destroy();
+    Sandbox.Mounting.PrefabBuilder.Destroy(prefab);
+}

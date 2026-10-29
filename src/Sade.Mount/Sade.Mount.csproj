@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>sade</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <SboxDirectory Condition="'$(SboxDirectory)' == ''">$(FACEPUNCH_ENGINE)</SboxDirectory>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Sade.Contracts/Sade.Contracts.csproj" />
+    <Reference Include="$(SboxDirectory)/bin/managed/Sandbox.System.dll" Private="false" />
+    <Reference Include="$(SboxDirectory)/bin/managed/Sandbox.Engine.dll" Private="false" />
+    <Reference Include="$(SboxDirectory)/bin/managed/Sandbox.Filesystem.dll" Private="false" />
+    <Reference Include="$(SboxDirectory)/bin/managed/Sandbox.Reflection.dll" Private="false" />
+    <Reference Include="$(SboxDirectory)/bin/managed/Sandbox.Mounting.dll" Private="false" />
+  </ItemGroup>
+  <Target Name="CheckEngine" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(SboxDirectory)/bin/managed/Sandbox.Engine.dll')" Text="Set FACEPUNCH_ENGINE or pass -p:SboxDirectory=... to the installed s&amp;box folder." />
+  </Target>
+</Project>

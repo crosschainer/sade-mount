@@ -111,6 +111,8 @@ public sealed record WeaponData(string Id, string Name, string ModelId, string F
     public float FireLoopEnd { get; init; }
     public float FireTime { get; init; }
     public float Accuracy { get; init; } = 1;
+    /// <summary>weapon.dat flag 0x2 (CWeaponInfo::bAimWithArm): aim the right arm instead of the two-handed upper-body pose.</summary>
+    public bool AimWithArm { get; init; }
     public string Kind { get; init; } = "hitscan";
     public string SourceName { get; init; } = "";
     public int ModelNumber { get; init; }

@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup><ItemGroup>
+  <Compile Include="../../src/Sade.Mount/ArmAimSolver.cs" Link="ArmAimSolver.cs" />
+  <ProjectReference Include="../../src/Sade.Reader/Sade.Reader.csproj" />
+</ItemGroup></Project>
