@@ -43,6 +43,10 @@ local files. No SDK or build tools are needed to use this release.
 In Sandbox, open the spawn menu's Mounts tab and select the GTA mount.
 Characters and vehicles activate their behavior automatically when spawned.
 
+To play the world, open Sandbox > New game > Map, choose GTA San Andreas - The
+Definitive Edition under Source, then select San Andreas. Map support is
+experimental; see the README and release notes for the current limits.
+
 When updating, close s&box and replace the sade folder with the new release.
 Keep sade.json if you have customized it.
 

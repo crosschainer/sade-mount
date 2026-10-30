@@ -2,9 +2,9 @@
 
 Checked on Windows with s&box 26.10.27c, the Steam Definitive Edition build 16391096 and .NET 10. The mount reads the two installed PAK archives; extracted assets are kept out of the repository and release.
 
-These notes cover v0.2, including the curated spawn menu, pedestrian flesh impacts and car occupant poses.
+These notes cover v0.3, including the streamed map and the earlier NPC, vehicle and spawn-menu features.
 
-The unreleased source build adds exterior-world streaming. Installed-game checks
+The streamed map uses exterior-world placements. Installed-game checks
 index 79,664 placements across 209 exterior sections with no failed sections,
 resolve their model references, preserve CJ's house transform and instance materials,
 and reuse the disk metadata cache. Spatial tests cover negative cells, multiple
@@ -22,6 +22,28 @@ These checks cover that neighbourhood, not every street in the game. Water,
 interiors, traffic, distant skyline proxies and generated navigation are pending.
 
 ## Automated checks
+
+Surface checks retain the original material bytes from COLL/COL2/COL3 faces and
+primitives, parse the installed 179-entry audio table, and transfer labels onto
+scaled and world-baked geometry without moving collision vertices. Ambiguous
+alignments explicitly use the source's dominant group. In-engine ground rays
+around Grove Street resolve concrete, grass and metal to three distinct footstep
+events, each played through the native PlayerController method.
+
+Loose-prop rules use `object.dat`, reject anchored special responses, immovable
+mass sentinels, large geometry, world-baked pieces and skeletal models. The source
+audit identifies 58 eligible models across 3,579 placements; qualification still
+requires usable convex collision at decode time. Installed fixtures check rubbish
+bags and cardboard boxes against their original mass and keep CJ's house and
+terrain static. Map-prop changes currently persist within the streaming session;
+save/reload and multiplayer replication of those changes are not implemented.
+
+The actual Sandbox New game map row and mounted-source selector were exercised.
+The launch result keeps the mounted scene path, the map loads through MapInstance
+with a normal Sandbox player, and the map picker exposes one San Andreas entry
+with a 1280×720 preview. Older city-start and source-build paths remain hidden
+aliases. The editor's map-string widget checks for a `.vpk` and may show “Map is
+not compiled”; the mounted SceneFile path loads directly without one.
 
 `scripts/Release.ps1` runs the format, weapon, aiming, texture, prefab, presentation, vehicle, reader and bootstrap checks before packaging. Set `SADE_GAME_DIR` to the GTA installation directory to include the reader's installed-game checks.
 

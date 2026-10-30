@@ -86,7 +86,7 @@ function Enable-SadeMount {
 
 function Assert-SadePackage {
     param([Parameter(Mandatory)][string]$Path)
-    foreach ($relative in @('sade.dll', 'Sade.Contracts.dll', 'backend\Sade.Reader.dll', 'backend\Sade.Reader.deps.json', 'assets\shaders\sade_surface.shader_c', 'third-party\CUE4Parse-vendored-animation\LICENSE', 'third-party\CUE4Parse-vendored-animation\NOTICE', 'third-party\CUE4Parse-vendored-animation\ORIGIN.md')) {
+    foreach ($relative in @('sade.dll', 'Sade.Contracts.dll', 'backend\Sade.Reader.dll', 'backend\Sade.Reader.deps.json', 'assets\shaders\sade_surface.shader_c', 'assets\ui\sade\san_andreas.png', 'third-party\CUE4Parse-vendored-animation\LICENSE', 'third-party\CUE4Parse-vendored-animation\NOTICE', 'third-party\CUE4Parse-vendored-animation\ORIGIN.md')) {
         if (-not (Test-Path -LiteralPath (Join-Path $Path $relative) -PathType Leaf)) { throw "Mount package is incomplete: $relative. Build the source or download a complete release." }
     }
     foreach ($file in Get-ChildItem -LiteralPath $Path -Recurse -File) {

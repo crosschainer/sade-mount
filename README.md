@@ -1,139 +1,54 @@
 # GTA San Andreas — The Definitive Edition mount for s&box
 
-Browse GTA San Andreas models, textures, sounds, and animations directly in s&box. Open Sandbox's **Mounts** tab to spawn characters, props and playable vehicles from your installed game.
-
-We mount the Definitive Edition because the original San Andreas was delisted from Steam.
+Explore San Andreas in Sandbox, spawn its characters and vehicles, and browse assets from your installed game. We mount the Definitive Edition because the original game was delisted from Steam.
 
 ## Install
 
 You need s&box and GTA San Andreas — The Definitive Edition installed through Steam.
 
-1. **[Download sade-mount.zip — v0.2](https://github.com/crosschainer/sade-mount/releases/download/v0.2/sade-mount.zip)**.
-2. Close s&box.
-3. Extract the ZIP into s&box's `mount` folder. The result should be `sbox/mount/sade/sade.dll`.
-4. Launch s&box and activate **GTA San Andreas — The Definitive Edition** in **Mounts**.
+1. **[Download v0.3](https://github.com/crosschainer/sade-mount/releases/download/v0.3/sade-mount.zip)** and close s&box.
+2. Extract the ZIP into s&box's `mount` folder: `sbox/mount/sade/sade.dll`.
+3. Launch s&box and enable **GTA San Andreas — The Definitive Edition** in **Mounts**.
 
-To find the s&box folder, right-click it in Steam and choose **Manage → Browse local files**. The mount finds your GTA installation automatically.
+Find the s&box folder through Steam → Manage → Browse local files. To update, replace the `sade` folder and keep your `sade.json` if you customized it.
 
-![GTA San Andreas — The Definitive Edition enabled in s&box's Mounts menu](docs/images/mount-activation.png)
+## Play
 
-When updating, close s&box and replace the `sade` folder with the new release. Keep `sade.json` if you have customized it. No SDK or build tools are needed to use a release.
+Open **Sandbox → New game → Map**, choose **GTA San Andreas — The Definitive Edition** under **Source**, then select **San Andreas**. You start at Grove Street; the other cities are part of the same streamed world.
 
-[Release notes and downloads](https://github.com/crosschainer/sade-mount/releases/tag/v0.2)
+![San Andreas in Sandbox's map picker](docs/images/map-picker.png)
 
-**New in v0.2:** organized asset folders with an **All** folder for the complete model collection, flesh sounds and blood when hitting NPCs, and steering-wheel grips with better foot placement in supported cars. Existing saved references still work.
+Use the spawn menu's **Mounts** tab for characters, vehicles and props:
 
-![An Infernus, NRG-500 and street props spawned in Sandbox](docs/images/sandbox-vehicles-and-props.png)
+- CJ, Big Smoke and the gangs animate, speak, fight rivals and retaliate when attacked.
+- NPCs have flesh impacts and blood, and support limb-by-limb physgun posing.
+- Drive cars and bikes, sail boats, and fly helicopters and planes with original engine sounds.
+- Pick up supported loose map props with the physgun. Terrain and buildings stay fixed.
+- Curated folders keep useful assets close; **All** contains the complete model collection.
+
+Press **E** beside a vehicle: left for the driver, right for a passenger. Press **E** again to exit. Use **WASD** to drive, **Space** for the handbrake, and **arrow keys** to pitch and roll aircraft. Helicopters use **W/S** to climb and descend.
+
+The map is experimental: water, interiors, traffic and generated navigation are still pending. [Release notes](docs/releases/v0.3.md) cover the current limits.
 
 ## See it in Sandbox
 
-Click a preview to download the MP4 recording.
+Click a preview to download the video.
 
 | Pedestrians and gang fights | Car driving |
 | --- | --- |
-| [![Download pedestrians and gang fights](docs/images/pedestrians-preview.jpg)](https://raw.githubusercontent.com/crosschainer/sade-mount/main/docs/videos/pedestrians.mp4) | [![Download car driving](docs/images/car-driving-preview.jpg)](https://raw.githubusercontent.com/crosschainer/sade-mount/main/docs/videos/car-driving.mp4) |
+| [![Pedestrians and gang fights](docs/images/pedestrians-preview.jpg)](https://raw.githubusercontent.com/crosschainer/sade-mount/main/docs/videos/pedestrians.mp4) | [![Car driving](docs/images/car-driving-preview.jpg)](https://raw.githubusercontent.com/crosschainer/sade-mount/main/docs/videos/car-driving.mp4) |
 | **Motorcycle riding** | **Helicopter flight** |
-| [![Download motorcycle riding](docs/images/motorcycle-riding-preview.jpg)](https://raw.githubusercontent.com/crosschainer/sade-mount/main/docs/videos/motorcycle-riding.mp4) | [![Download helicopter flight](docs/images/helicopter-flight-preview.jpg)](https://raw.githubusercontent.com/crosschainer/sade-mount/main/docs/videos/helicopter-flight.mp4) |
+| [![Motorcycle riding](docs/images/motorcycle-riding-preview.jpg)](https://raw.githubusercontent.com/crosschainer/sade-mount/main/docs/videos/motorcycle-riding.mp4) | [![Helicopter flight](docs/images/helicopter-flight-preview.jpg)](https://raw.githubusercontent.com/crosschainer/sade-mount/main/docs/videos/helicopter-flight.mp4) |
 
-## What's included
+<details>
+<summary>More screenshots</summary>
 
-- Separate folders for NPCs, Vehicles, Common buildings, Ramps, Street props and Construction props, plus **All** for every source model.
-- Static and skeletal models, textures, materials, and authored collision.
-- Sound effects, dialogue, radio tracks, and animation banks.
-- Animated pedestrians, with gang members that fight rivals and retaliate when attacked.
-- Original character voices for nearby greetings, gang fights and reactions.
-- Flesh hit sounds, blood effects and wound decals when attacking NPCs.
-- Limb-by-limb physgun posing, using Sandbox's normal grab and freeze controls.
-- The full GTA weapon roster, with original models, animations, sounds and bullet tracers for NPC fights.
-- Cars, motorcycles, bicycles, boats, helicopters and planes with enterable seats.
-- Hands on bike handlebars and supported car steering wheels, with car occupants' feet fitted into the cabin.
-- Original engine sounds with changing revs, gear shifts and throttle response.
+![Vehicles and street props in Sandbox](docs/images/sandbox-vehicles-and-props.png)
+![Characters and props in the spawn menu](docs/images/spawn-menu.png)
+![The mount enabled in s&box](docs/images/mount-activation.png)
 
-Assets load when needed and are reused on subsequent loads. Navigation-enabled maps let NPCs move around obstacles. Without navigation, they remain in place with their idle animation.
+</details>
 
-Grove Street, Ballas, Vagos, Aztecas, Rifa, Triads, Da Nang Boys and Mafia use their original affiliations. CJ, Big Smoke and other recognizable characters appear first. Spawning a character or vehicle from Sandbox's Mounts tab activates its behavior automatically.
+[Settings and building from source](docs/development.md) · [Validation](docs/validation.md) · [Third-party notices](THIRD-PARTY-NOTICES.md)
 
-![Characters and props in Sandbox's Mounts tab](docs/images/spawn-menu.png)
-
-Grab an NPC's arm, leg or body with the physgun to switch it into a poseable ragdoll. It stays in pose mode so frozen limbs keep their positions. Spawn another copy when you want an active NPC again.
-
-Near a vehicle, press **E** on the left side to drive, or on the right side to take an available passenger seat. Press **E** again to exit.
-
-| Vehicle | Controls |
-| --- | --- |
-| Cars and bikes | W accelerate, S brake/reverse, A/D steer, Space handbrake |
-| Boats | W/S throttle, A/D steer |
-| Helicopters | W/S climb and descend, A/D yaw, arrow keys pitch and roll |
-| Planes | W/S increase and decrease throttle, A/D yaw, arrow keys pitch and roll |
-
-Vehicle handling uses the original handling data with an arcade physics adapter. Hand and foot fitting uses the Human avatar and verified vehicle geometry; unsupported seats keep their normal pose. Trains, trailers and RC vehicles are available as models under **All**. Full-world loading, missions and vehicle combat are outside this release. Materials are translated into s&box shaders, so some Unreal effects look different.
-
-## Settings
-
-The source build also includes an experimental streamed San Andreas map. Open
-`mount://sade/maps/san_andreas.scene` in the editor to start at Grove Street.
-`san_andreas_san_fierro.scene` and `san_andreas_las_venturas.scene` use the same
-world with different starting points. These maps are not included in the v0.2 download.
-
-Nearby geometry loads as you move, with smaller props disappearing sooner than
-buildings and terrain. The default viewing distance is 450 metres and collision
-loads within 180 metres. The first visit to an area takes longer while its meshes
-and textures are converted. Streamed static geometry uses detailed triangle
-collision where simple hulls would block streets. Some world-baked meshes also
-need collision derived from their visible surfaces because the retained classic
-collision uses different coordinates. Water, interiors, traffic, distant skyline
-proxies and a generated navigation mesh are not implemented yet.
-Map footsteps currently use the default surface sound; GTA surface types are not mapped yet.
-
-Settings are optional. To override the game location or cache folder, create `mount/sade/sade.json`:
-
-```json
-{
-  "GameDirectory": "D:\\Games\\GTA San Andreas - The Definitive Edition",
-  "CacheDirectory": "D:\\Caches\\sade-mount",
-  "RegisterAnimationVariants": true,
-  "LodDistance": 2000
-}
-```
-
-The default cache is `%LOCALAPPDATA%\sade-mount\cache`. Restart s&box after changing settings. If an asset cannot load, its source path and the reason appear in the console.
-
-For the experimental map, `WorldViewDistanceMeters`, `WorldCollisionDistanceMeters`,
-`WorldTextureMaxSize` (default 1024), `WorldFrameBudgetMilliseconds` (default 3) and
-`WorldCacheMegabytes` (default 512) control streaming. The cache budget applies to
-unused resources; geometry still in view can exceed it. Individual mesh uploads
-and collision builds can take longer than the frame budget.
-
-## Building from source
-
-Install the .NET 10 SDK, then run these commands from the repository in PowerShell:
-
-```powershell
-.\scripts\Build.ps1
-.\scripts\Install.ps1 -SkipBuild
-.\scripts\Release.ps1 -SkipBuild
-```
-
-The scripts use `FACEPUNCH_ENGINE` or Steam's default s&box folder. Pass `-SboxDirectory 'D:\SteamLibrary\steamapps\common\sbox'` to choose another installation. `-DotnetPath` selects a specific `dotnet.exe`.
-
-Build output is `.artifacts/package/sade`; the release ZIP is `.artifacts/sade-mount.zip`. Rebuild after s&box API updates. Game data and the game's decoder stay in the GTA installation; they are not included in the package.
-
-To prepare the demo project:
-
-```powershell
-.\scripts\Setup-Demo.ps1
-```
-
-Open `Demo/sade_preview/sade_preview.sbproj` in s&box.
-
-## Development
-
-`src/Sade.Mount` creates s&box resources and runs NPC and vehicle behavior. `src/Sade.Reader` reads Unreal packages in an isolated assembly context. `src/Sade.Contracts` defines the shared data types; `src/Sade.Formats` reads classic GTA animation and collision formats. No project helper or engine modification is needed.
-
-Resources use `mount://sade/` paths. The `models`, `materials`, `textures`, and `sounds` paths preserve the source hierarchy. Animation variants, loadouts and legacy prefab paths remain registered for dependencies and saved scenes, while Sandbox's model browser shows the curated folders and **All**.
-
-Missing or malformed authored collision is reported by source asset. Aircraft with empty PhysicsAssets use reported convex collision derived from their intact mesh. Weapon projectile flight, area effects and vehicle physics use s&box implementations.
-
-The native mounting structure takes inspiration from [K3rhos/alan_wake](https://github.com/K3rhos/alan_wake). See [third-party notices](THIRD-PARTY-NOTICES.md) for dependencies and source credits.
-
-[Validation notes](docs/validation.md) describe the checks and remaining limitations.
+Mount architecture inspired by [K3rhos/alan_wake](https://github.com/K3rhos/alan_wake).

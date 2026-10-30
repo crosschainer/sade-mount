@@ -5,6 +5,19 @@ mounted scene and wait for nearby geometry to load. It checks the exact road52
 invisible-wall report, the storm-drain fall-through location and a neighbourhood
 ground grid, without moving the player or changing the scene.
 
+WorldSurfaces.cs checks concrete, grass and metal with actual ground rays around
+Grove Street, verifies distinct footstep events, then plays each through an
+isolated PlayerController without moving the player. WorldMapPicker.cs opens
+Sandbox's real New game setup, selects the GTA source, checks the single San
+Andreas entry and preview image, and verifies that the mounted path reaches the
+launch result. It closes its test dialog and preserves older map references.
+
+WorldProps.cs exercises Sandbox's real physgun body-selection and movement
+checks on a loaded loose map prop. It verifies authored mass, fixed buildings
+and roads, and a moved/frozen pose after forced stream-out and reload. It restores
+the prop afterward. This does not exercise multiplayer ownership or scene-save
+persistence of map-prop changes.
+
 CuratedBrowser.cs audits the mounted registry without decoding models. It checks the 322 curated choices (67 NPCs, 191 vehicles and 64 scenery models) plus the complete static/skeletal source model collection under All, the seven intended folders, CJ/Big Smoke priority, unique paths and agreement between the folder tree and Sandbox's model list. The recursive root list includes both collections. Source weapon models are available through All; legacy aliases and generated loadout/animation variants stay hidden while saved references still resolve. Run it before CuratedScenery.cs when measuring how many models were already decoded during browsing.
 
 CuratedScenery.cs loads all 64 curated buildings, ramps and props in a disposable scene. It checks finite bounds, renderable geometry and nonempty collision, then captures a private overview with each model scaled to fit its own cell. The overview is for reviewing the selection, not for comparing real-world sizes. The active scene and camera are left unchanged.
