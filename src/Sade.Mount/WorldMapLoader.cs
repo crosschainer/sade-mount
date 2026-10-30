@@ -6,6 +6,15 @@ namespace Sade.Mount;
 
 internal sealed class WorldMapLoader(string start) : SceneLoader<SadeMount>
 {
+    protected override Texture GetThumbnail()
+    {
+        // Metadata is queried from both the game and menu filesystems.
+        var path = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(typeof(SadeMount).Assembly.Location)!, "assets", "ui", "sade", "san_andreas.png");
+        if (!File.Exists(path)) return null!;
+        using var bitmap = Bitmap.CreateFromBytes(File.ReadAllBytes(path));
+        return bitmap.ToTexture();
+    }
+
     protected override void BuildScene()
     {
         // Mounted scene requests can be synchronous during editor startup. Never
@@ -48,8 +57,17 @@ public sealed partial class SadeMount
 
     private void RegisterWorld(Sandbox.Mounting.MountContext context)
     {
-        context.Add(ResourceType.Scene, "maps/san_andreas", new WorldMapLoader("grove"));
-        context.Add(ResourceType.Scene, "maps/san_andreas_san_fierro", new WorldMapLoader("fierro"));
-        context.Add(ResourceType.Scene, "maps/san_andreas_las_venturas", new WorldMapLoader("venturas"));
+        context.Add(ResourceType.Scene, "maps/San Andreas", new WorldMapLoader("grove"));
+        foreach (var (start, title, savedPath) in new[]
+        {
+            ("grove", "San Andreas - Grove Street", "san_andreas"),
+            ("fierro", "San Andreas - San Fierro", "san_andreas_san_fierro"),
+            ("venturas", "San Andreas - Las Venturas", "san_andreas_las_venturas")
+        })
+        {
+            context.Add(ResourceType.Scene, "maps/" + title, new WorldMapLoader(start) { Flags = ResourceFlags.DeveloperOnly });
+            // Keep the original source-build paths working without duplicate map-picker entries.
+            context.Add(ResourceType.Scene, "maps/" + savedPath, new WorldMapLoader(start) { Flags = ResourceFlags.DeveloperOnly });
+        }
     }
 }

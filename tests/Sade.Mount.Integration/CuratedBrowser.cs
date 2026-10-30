@@ -4,7 +4,7 @@ var flag = Sandbox.Mounting.ResourceFlags.DeveloperOnly;
 var modelType = Sandbox.Mounting.ResourceType.Model;
 var visible = mount.GetAll(modelType).Where(x => (x.Flags & flag) == 0).ToArray();
 var tree = mount.RootFolder ?? throw new Exception("The browser tree is missing.");
-var folders = tree.Folders.Select(f => f.Name).OrderBy(n => n).ToArray();
+var folders = tree.Folders.Where(f => f.ContainsType(modelType)).Select(f => f.Name).OrderBy(n => n).ToArray();
 var expected = new[] { "All", "Common buildings", "Construction props", "NPCs", "Ramps", "Street props", "Vehicles" }.OrderBy(n => n).ToArray();
 if (!folders.SequenceEqual(expected, StringComparer.OrdinalIgnoreCase)) throw new Exception("Unexpected top-level folders: " + string.Join(", ", folders));
 var allModels = visible.Where(x => x.RelativePath.StartsWith("All/", StringComparison.OrdinalIgnoreCase)).ToArray();
