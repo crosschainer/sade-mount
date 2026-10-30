@@ -10,13 +10,13 @@ You need s&box and GTA San Andreas — The Definitive Edition installed through 
 2. Extract the ZIP into s&box's `mount` folder: `sbox/mount/sade/sade.dll`.
 3. Launch s&box and enable **GTA San Andreas — The Definitive Edition** in **Mounts**.
 
+![The mount enabled in s&box](docs/images/mount-activation.png)
+
 Find the s&box folder through Steam → Manage → Browse local files. To update, replace the `sade` folder and keep your `sade.json` if you customized it.
 
 ## Play
 
 Open **Sandbox → New game → Map**, choose **GTA San Andreas — The Definitive Edition** under **Source**, then select **San Andreas**. You start at Grove Street; the other cities are part of the same streamed world.
-
-![San Andreas in Sandbox's map picker](docs/images/map-picker.png)
 
 Use the spawn menu's **Mounts** tab for characters, vehicles and props:
 
@@ -45,7 +45,7 @@ Click a preview to download the video.
 
 ![Vehicles and street props in Sandbox](docs/images/sandbox-vehicles-and-props.png)
 ![Characters and props in the spawn menu](docs/images/spawn-menu.png)
-![The mount enabled in s&box](docs/images/mount-activation.png)
+![San Andreas in Sandbox's map picker](docs/images/map-picker.png)
 
 </details>
 
