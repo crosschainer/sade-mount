@@ -47,3 +47,79 @@ Check(left.MaterialId=="rim_material" && left.Vertices[0].UV==vertex.UV && left.
 Check(assembled.BoundsMin.X<=-12 && assembled.BoundsMax.X>=11 && ReferenceEquals(assembled.Collision,body.Collision),"Preview bounds or original collision changed");
 Check(body.Parts.Length==2 && wheel.Parts[0].Vertices[0]==vertex,"Cached source geometry was mutated");
 Console.WriteLine("PASS wheel socket placement, front/rear size, side orientation, LODs, material/UV preservation and original collision.");
+
+// Spawn selection must remain bounded and dependency-free: world chunks and internal resources
+// are still resolvable, but never become menu entries just because their names match a keyword.
+var picks = SpawnCatalog.StaticAssets;
+Check(picks.Count == 64, "The deliberate static selection unexpectedly changed size");
+var expectedCategories = new Dictionary<string,int> {
+    ["Common buildings"] = 12, ["Ramps"] = 12, ["Street props"] = 22, ["Construction props"] = 18 };
+foreach (var category in expectedCategories)
+    Check(picks.Count(p => p.Path.StartsWith(category.Key + "/", StringComparison.Ordinal)) == category.Value,
+        "Unexpected selection for " + category.Key);
+Check(picks.Select(p => p.Path).Distinct(StringComparer.OrdinalIgnoreCase).Count() == picks.Count,
+    "Two static selections have the same menu path");
+Check(picks.Select(p => p.SourceId).Distinct(StringComparer.OrdinalIgnoreCase).Count() == picks.Count,
+    "One static model is exposed more than once");
+foreach (var pick in picks)
+{
+    Check(pick.SourceId.StartsWith("/Game/SanAndreas/Environment/", StringComparison.Ordinal) &&
+        pick.SourceId.EndsWith("/" + pick.ModelName + "." + pick.ModelName, StringComparison.Ordinal),
+        "Static selection must identify an exact San Andreas package and object");
+    Check(!pick.SourceId.Contains("/Collision/", StringComparison.OrdinalIgnoreCase) &&
+        !pick.SourceId.Contains("/Cutscene/", StringComparison.OrdinalIgnoreCase), "Internal geometry leaked into the menu");
+    Check(!pick.Path.Split('/').Any(s => string.IsNullOrWhiteSpace(s) || s is "." or ".." ||
+        s.IndexOfAny(['\\', ':', '*', '?', '"', '<', '>', '|']) >= 0), "Unsafe friendly resource path");
+}
+Check(picks.Single(p => p.Path == "Common buildings/CJ's house").ModelName == "SM_carlshou1_lae2" &&
+    picks.Single(p => p.Path == "Common buildings/CJ's garage").ModelName == "SM_cjsaveg", "CJ house and garage were confused");
+Check(picks.Single(p => p.ModelName == "SM_vendmach").SourceId ==
+    "/Game/SanAndreas/Environment/Props/SM_vendmach.SM_vendmach", "Ambiguous GTA3 vending machine selected");
+
+static AssetEntry Ped(string model, string folder = "Peds")
+{
+    var name = "SK_" + model;
+    return new($"/Game/SanAndreas/Characters/{folder}/{name}.{name}", "unused", AssetKind.SkeletalMesh, name);
+}
+var preset = new PedestrianPreset("Person", "ifp:ped", "IDLE_stance", "WALK_player", "run_player", "man");
+Check(SpawnCatalog.GetPedestrianPath(Ped("Player_Combined", "Player"), preset) == "NPCs/Characters/CJ", "CJ missing");
+Check(SpawnCatalog.GetPedestrianPath(Ped("smoke"), preset) == "NPCs/Characters/Big Smoke", "Big Smoke missing");
+Check(SpawnCatalog.GetPedestrianPath(Ped("ryder2", "SpecialPeds"), preset) == "NPCs/Characters/Ryder", "Ryder missing");
+Check(SpawnCatalog.GetPedestrianPath(Ped("ballas1"), preset) == "NPCs/Gangs/Ballas/Ballas 1" &&
+    SpawnCatalog.GetPedestrianPath(Ped("fam3"), preset) == "NPCs/Gangs/Grove Street/Grove Street 3", "Gang labels must remain recognizable outside their folder");
+Check(SpawnCatalog.GetPedestrianPath(Ped("lapd1"), preset) == "NPCs/Police/Los Santos officer" &&
+    SpawnCatalog.GetPedestrianPath(Ped("wmymech"), preset) == "NPCs/Civilians/Mechanic", "Everyday NPC selection changed");
+Check(SpawnCatalog.GetPedestrianOrder(Ped("Player_Combined", "Player")) < SpawnCatalog.GetPedestrianOrder(Ped("smoke")) &&
+    SpawnCatalog.GetPedestrianOrder(Ped("smoke")) < SpawnCatalog.GetPedestrianOrder(Ped("fam1")), "Featured NPC ordering changed");
+foreach (var hidden in new[] { Ped("torso", "Player"), Ped("jeans", "Player"), Ped("smokev"), Ped("ryder3", "SpecialPeds"),
+    Ped("smoke", "Cutscene"), Ped("smoke", "Peds/Clothes"), Ped("unknown") })
+    Check(SpawnCatalog.GetPedestrianPath(hidden, preset) is null, "Modular, alternate or cutscene NPC exposed: " + hidden.Id);
+Check(SpawnCatalog.GetPedestrianPath(Ped("smoke") with { Kind = AssetKind.StaticMesh }, preset) is null &&
+    SpawnCatalog.GetPedestrianPath(Ped("smoke"), preset with { BankId = "" }) is null, "NPC without an animation source exposed");
+Check(SpawnCatalog.GetPedestrianPath(Ped("smoke") with { Id = Ped("smoke").Id.ToUpperInvariant() }, preset) ==
+    "NPCs/Characters/Big Smoke", "Source identity lookup became case-sensitive");
+
+static VehicleData Vehicle(string id, string family) => new(id, id, "source", family, id);
+var vehicleExamples = new[] {
+    ("infernus", "road", "Vehicles/Cars/Infernus"), ("nrg500", "bike", "Vehicles/Bikes/NRG-500"),
+    ("bmx", "bicycle", "Vehicles/Bicycles/BMX"), ("squalo", "boat", "Vehicles/Boats/Squalo"),
+    ("vortex", "hovercraft", "Vehicles/Boats/Vortex (hovercraft)"), ("maverick", "helicopter", "Vehicles/Helicopters/Maverick"),
+    ("at400", "plane", "Vehicles/Planes/AT-400"), ("copcarla", "road", "Vehicles/Cars/Police Car (Los Santos)") };
+foreach (var (id, family, path) in vehicleExamples)
+    Check(SpawnCatalog.GetVehiclePath(Vehicle(id, family)) == path, "Vehicle category or name incorrect: " + id);
+foreach (var unsupported in new[] { Vehicle("freight", "train"), Vehicle("artict1", "trailer"), Vehicle("unknown", "unknown"),
+    Vehicle("rcbandit", "road") with { RemoteControlled = true }, Vehicle("../bad", "road") })
+    Check(SpawnCatalog.GetVehiclePath(unsupported) is null, "Unsupported or unsafe vehicle exposed: " + unsupported.Id);
+var variantPaths = new[] { "hotring", "hotrina", "hotrinb", "monster", "monstera", "monsterb", "glendale", "glenshit",
+    "sadler", "sadlshit", "boxville", "boxburg", "copcarla", "copcarsf", "copcarvg", "copcarru" }
+    .Select(id => SpawnCatalog.GetVehiclePath(Vehicle(id, "road"))).ToArray();
+Check(variantPaths.Distinct(StringComparer.OrdinalIgnoreCase).Count() == variantPaths.Length, "Vehicle variant names collide");
+var priorCulture = System.Globalization.CultureInfo.CurrentCulture;
+try
+{
+    System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo("tr-TR");
+    Check(SpawnCatalog.GetVehiclePath(Vehicle("INFERNUS", "ROAD")) == "Vehicles/Cars/Infernus",
+        "Vehicle menu paths depend on the user's locale");
+}
+finally { System.Globalization.CultureInfo.CurrentCulture = priorCulture; }
+Console.WriteLine("PASS curated exact source identities, unique categories, complete NPC filtering, vehicle families and stable friendly paths.");

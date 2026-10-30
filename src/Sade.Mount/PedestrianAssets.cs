@@ -68,16 +68,16 @@ public sealed partial class SadeMount
         var representatives = new List<AssetEntry>();
         foreach (var (name, label) in picks)
         {
-            var entry = catalog.FirstOrDefault(x => x.Kind == AssetKind.SkeletalMesh && x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            var entry = catalog.FirstOrDefault(x => x.Kind == AssetKind.SkeletalMesh && x.Id.StartsWith("/Game/SanAndreas/", StringComparison.OrdinalIgnoreCase) && x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (entry is null || Reader.GetPedestrianPreset(entry.Id) is not { } preset) continue;
-            context.Add(ResourceType.PrefabFile, $"00_featured/{label}", new PedestrianLoader(entry.Id, preset));
-            context.Add(ResourceType.Model, $"00_featured/{label}", new AliasLoader(ModelPath(entry.Id)));
+            context.Add(ResourceType.PrefabFile, $"00_featured/{label}", new PedestrianLoader(entry.Id, preset) { Flags = ResourceFlags.DeveloperOnly });
+            context.Add(ResourceType.Model, $"00_featured/{label}", new AliasLoader(ModelPath(entry.Id)) { Flags = ResourceFlags.DeveloperOnly });
             representatives.Add(entry);
         }
         foreach (var name in new[] { "SM_nt_aircon1dbl", "SM_lamppost1", "SM_bin1", "SM_cj_dumpster", "SM_lamppost3", "SM_veg_palm02" })
         {
             var entry = catalog.FirstOrDefault(x => x.Kind == AssetKind.StaticMesh && x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-            if (entry is not null) context.Add(ResourceType.Model, $"00_featured/props/{name.ToLowerInvariant()}", new AliasLoader(ModelPath(entry.Id)));
+            if (entry is not null) context.Add(ResourceType.Model, $"00_featured/props/{name.ToLowerInvariant()}", new AliasLoader(ModelPath(entry.Id)) { Flags = ResourceFlags.DeveloperOnly });
         }
         return representatives;
     }
@@ -87,13 +87,13 @@ public sealed partial class SadeMount
         foreach (var weapon in weapons.Values)
         {
             if (!string.IsNullOrEmpty(weapon.ModelId))
-                context.Add(ResourceType.Model, $"01_weapons/{weapon.Kind}/{weapon.Id}", new AliasLoader(ModelPath(weapon.ModelId)));
+                context.Add(ResourceType.Model, $"01_weapons/{weapon.Kind}/{weapon.Id}", new AliasLoader(ModelPath(weapon.ModelId)) { Flags = ResourceFlags.DeveloperOnly });
             foreach (var entry in representatives)
             {
                 var preset = Reader.GetPedestrianPreset(entry.Id)!;
-                context.Add(ResourceType.Model, LoadoutPath(entry, weapon.Id), new ModelLoader(entry.Id, weaponId: weapon.Id));
-                context.Add(ResourceType.Model, $"loadouts/{weapon.Kind}/{weapon.Id}/{entry.Name.ToLowerInvariant()}", new AliasLoader(ActorModelPath(entry.Id, weapon.Id)));
-                context.Add(ResourceType.PrefabFile, $"loadouts/{weapon.Kind}/{weapon.Id}/{entry.Name.ToLowerInvariant()}", new PedestrianLoader(entry.Id, preset, weapon.Id));
+                context.Add(ResourceType.Model, LoadoutPath(entry, weapon.Id), new ModelLoader(entry.Id, weaponId: weapon.Id) { Flags = ResourceFlags.DeveloperOnly });
+                context.Add(ResourceType.Model, $"loadouts/{weapon.Kind}/{weapon.Id}/{entry.Name.ToLowerInvariant()}", new AliasLoader(ActorModelPath(entry.Id, weapon.Id)) { Flags = ResourceFlags.DeveloperOnly });
+                context.Add(ResourceType.PrefabFile, $"loadouts/{weapon.Kind}/{weapon.Id}/{entry.Name.ToLowerInvariant()}", new PedestrianLoader(entry.Id, preset, weapon.Id) { Flags = ResourceFlags.DeveloperOnly });
             }
         }
     }

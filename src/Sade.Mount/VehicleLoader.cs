@@ -56,7 +56,8 @@ public sealed partial class SadeMount
     private void RegisterVehicles(MountContext context)
     {
         var featured = new HashSet<string>(["infernus", "savanna", "bmx", "nrg500", "squalo", "dodo", "maverick"], StringComparer.OrdinalIgnoreCase);
-        foreach (var data in Reader.GetVehicles())
+        foreach (var data in Reader.GetVehicles().OrderByDescending(v => featured.Contains(v.Id))
+                     .ThenBy(v => SpawnCatalog.GetVehiclePath(v) ?? v.Id, StringComparer.OrdinalIgnoreCase))
         {
             var modelPath = ModelPath(data.ModelId);
             var profile = new VehicleRuntime.Profile(data, VehicleBodyPath(data), data.WheelModelId is null ? null : ModelPath(data.WheelModelId));
@@ -64,15 +65,21 @@ public sealed partial class SadeMount
             VehicleRuntime.Register(VehicleBodyPath(data), profile);
             var bodyLoader = new ModelLoader(data.ModelId, previewWheels: false) { Flags = ResourceFlags.DeveloperOnly };
             context.Add(ResourceType.Model, $"vehicle_bodies/{data.Id}", bodyLoader);
-            var loader = new VehicleLoader(data);
+            // The folder tree retains the casing of its first registered path.
+            if (SpawnCatalog.GetVehiclePath(data) is { } displayPath)
+            {
+                context.Add(ResourceType.PrefabFile, displayPath, new VehicleLoader(data));
+                context.Add(ResourceType.Model, displayPath, new AliasLoader(modelPath));
+            }
+            var loader = new VehicleLoader(data) { Flags = ResourceFlags.DeveloperOnly };
             context.Add(ResourceType.PrefabFile, $"vehicles/{data.Family}/{data.Id}", loader);
-            context.Add(ResourceType.Model, $"vehicles/{data.Family}/{data.Id}", new AliasLoader(modelPath));
+            context.Add(ResourceType.Model, $"vehicles/{data.Family}/{data.Id}", new AliasLoader(modelPath) { Flags = ResourceFlags.DeveloperOnly });
             loader.Tags.UnionWith(["sade", "vehicle", data.Family, data.Name]);
             if (data.Family is not ("train" or "trailer") && !data.RemoteControlled) loader.Tags.Add("driveable");
             if (featured.Contains(data.Id))
             {
-                context.Add(ResourceType.PrefabFile, $"00_featured/vehicles/{data.Id}", new VehicleLoader(data));
-                context.Add(ResourceType.Model, $"00_featured/vehicles/{data.Id}", new AliasLoader(modelPath));
+                context.Add(ResourceType.PrefabFile, $"00_featured/vehicles/{data.Id}", new VehicleLoader(data) { Flags = ResourceFlags.DeveloperOnly });
+                context.Add(ResourceType.Model, $"00_featured/vehicles/{data.Id}", new AliasLoader(modelPath) { Flags = ResourceFlags.DeveloperOnly });
             }
         }
     }

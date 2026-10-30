@@ -7,7 +7,10 @@ var results = new System.Collections.Generic.List<object>();
 foreach (var (path, runtimeName) in new[] {
     ("mount://sade/00_featured/00_cj.vmdl", "PedestrianRuntime"),
     ("mount://sade/00_featured/vehicles/infernus.vmdl", "VehicleRuntime"),
-    ("mount://sade/00_featured/props/sm_bin1.vmdl", "") })
+    ("mount://sade/00_featured/props/sm_bin1.vmdl", ""),
+    ("mount://sade/NPCs/Characters/Big Smoke.vmdl", "PedestrianRuntime"),
+    ("mount://sade/Vehicles/Cars/Infernus.vmdl", "VehicleRuntime"),
+    ("mount://sade/Ramps/Portable ramp.vmdl", "") })
 {
     var spawner = new MountSpawner(path);
     await spawner.Loading;

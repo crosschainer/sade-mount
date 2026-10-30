@@ -12,6 +12,7 @@ public sealed partial class SadeMount : BaseGameMount
     internal IGameReader Reader { get; private set; } = null!;
     internal SadeSettings Settings { get; private set; } = new();
     private ReaderContext? readerContext;
+    private MountBrowser? browser;
     private string? gameDirectory;
     // Keep value types from the private reader contract out of fields: the host calls
     // Assembly.GetTypes before our module initializer can install dependency probing.
@@ -55,15 +56,20 @@ public sealed partial class SadeMount : BaseGameMount
                 };
                 var type = TypeFor(entry.Kind);
                 loader.Tags.Add("sade");
-                if (!entry.Id.StartsWith("/Game/SanAndreas/", StringComparison.OrdinalIgnoreCase)) loader.Flags |= ResourceFlags.DeveloperOnly;
+                // Keep dependency and saved-scene paths resolvable without putting raw
+                // meshes, character parts and animation variants in Sandbox's spawn list.
+                loader.Flags |= ResourceFlags.DeveloperOnly;
                 paths[((int)entry.Kind, entry.Id.ToLowerInvariant())] = $"mount://sade/{relative}{Extension(entry.Kind)}";
                 pending.Add((type, relative, loader));
             }
 
-            // Sandbox preserves registration order in its Games tab. Put recognizable,
-            // usable assets first; dependent resources can still be registered lazily below.
+            // Sandbox preserves registration order. Only the curated aliases are visible;
+            // source resources remain metadata until a model, material or sound needs them.
+            RegisterCuratedPedestrians(context, catalog);
             var representatives = RegisterFeatured(context, catalog);
             RegisterVehicles(context);
+            RegisterCuratedProps(context);
+            RegisterAllModels(context, catalog);
             foreach (var item in pending) context.Add(item.Type, item.Relative, item.Loader);
             RegisterLoadouts(context, representatives);
 
@@ -74,27 +80,31 @@ public sealed partial class SadeMount : BaseGameMount
                 var preset = Reader.GetPedestrianPreset(entry.Id);
                 if (preset is not null)
                 {
-                    var prefab = new PedestrianLoader(entry.Id, preset);
+                    var prefab = new PedestrianLoader(entry.Id, preset) { Flags = ResourceFlags.DeveloperOnly };
                     context.Add(ResourceType.PrefabFile, $"pedestrians/{entry.Name.ToLowerInvariant()}", prefab);
                     prefab.Tags.UnionWith(["pedestrian", "animated", preset.Group]);
                     if (entry.Name.Equals("SK_smoke", StringComparison.OrdinalIgnoreCase)) prefab.Tags.Add("big smoke");
                     if (Settings.RegisterAnimationVariants)
                         foreach (var bank in banks)
-                            context.Add(ResourceType.Model, $"animations/{CleanPath(entry.Path)}/{CleanPath(bank.Path)}", new ModelLoader(entry.Id, bank.Id));
+                            context.Add(ResourceType.Model, $"animations/{CleanPath(entry.Path)}/{CleanPath(bank.Path)}", new ModelLoader(entry.Id, bank.Id) { Flags = ResourceFlags.DeveloperOnly });
                 }
                 if (!Settings.RegisterAnimationVariants || string.IsNullOrEmpty(entry.SkeletonId)) continue;
                 foreach (var clip in nativeAnimations.Where(x => string.Equals(x.SkeletonId, entry.SkeletonId, StringComparison.OrdinalIgnoreCase)))
-                    context.Add(ResourceType.Model, $"animations/{CleanPath(entry.Path)}/{CleanPath(clip.Path)}", new ModelLoader(entry.Id, clip.Id));
+                    context.Add(ResourceType.Model, $"animations/{CleanPath(entry.Path)}/{CleanPath(clip.Path)}", new ModelLoader(entry.Id, clip.Id) { Flags = ResourceFlags.DeveloperOnly });
             }
             InvalidateOldPreviews();
             PedestrianRuntime.Start();
             VehicleRuntime.Start();
             IsMounted = true;
-            Log.Info($"Mounted {catalog.Count:N0} GTA assets as {Resources.Count:N0} s&box resources.");
+            browser = new MountBrowser(this);
+            browser.Schedule();
+            var visible = Resources.Count(x => x.Type == ResourceType.Model && (x.Flags & ResourceFlags.DeveloperOnly) == 0);
+            Log.Info($"Mounted {visible:N0} spawn choices; {catalog.Count:N0} source assets indexed for on-demand loading.");
         }
         catch (Exception e)
         {
             Log.Warning(e, "SADE mount failed");
+            browser?.Dispose(); browser = null;
             Reader?.Dispose();
             readerContext?.Unload();
             readerContext = null;
@@ -141,6 +151,7 @@ public sealed partial class SadeMount : BaseGameMount
     }
     protected override void Shutdown()
     {
+        browser?.Dispose(); browser = null;
         PedestrianRuntime.Stop();
         VehicleRuntime.Stop();
         weapons.Clear();

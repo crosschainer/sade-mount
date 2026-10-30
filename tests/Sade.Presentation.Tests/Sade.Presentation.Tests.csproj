@@ -6,5 +6,6 @@
     <Compile Include="../../src/Sade.Mount/LocomotionPlayback.cs" Link="LocomotionPlayback.cs" />
     <Compile Include="../../src/Sade.Mount/PedestrianAnimationLayers.cs" Link="PedestrianAnimationLayers.cs" />
     <Compile Include="../../src/Sade.Mount/PlayerOutfit.cs" Link="PlayerOutfit.cs" />
+    <Compile Include="../../src/Sade.Mount/SpawnCatalog.cs" Link="SpawnCatalog.cs" />
   </ItemGroup>
 </Project>
