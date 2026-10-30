@@ -8,7 +8,7 @@ We mount the Definitive Edition because the original San Andreas was delisted fr
 
 You need s&box and GTA San Andreas — The Definitive Edition installed through Steam.
 
-1. **[Download sade-mount.zip — v0.1](https://github.com/crosschainer/sade-mount/releases/download/v0.1/sade-mount.zip)**.
+1. **[Download sade-mount.zip — v0.2](https://github.com/crosschainer/sade-mount/releases/download/v0.2/sade-mount.zip)**.
 2. Close s&box.
 3. Extract the ZIP into s&box's `mount` folder. The result should be `sbox/mount/sade/sade.dll`.
 4. Launch s&box and activate **GTA San Andreas — The Definitive Edition** in **Mounts**.
@@ -19,9 +19,9 @@ To find the s&box folder, right-click it in Steam and choose **Manage → Browse
 
 When updating, close s&box and replace the `sade` folder with the new release. Keep `sade.json` if you have customized it. No SDK or build tools are needed to use a release.
 
-[Release notes and downloads](https://github.com/crosschainer/sade-mount/releases/tag/v0.1)
+[Release notes and downloads](https://github.com/crosschainer/sade-mount/releases/tag/v0.2)
 
-**Next update — unreleased, available in source builds:** curated folders organize NPCs, vehicles, buildings, ramps and props; **All** exposes the complete source model library. NPC hits gain flesh sounds, blood and wound decals. Car drivers grip the steering wheel, with occupants' feet fitted into supported cabins. Saved references still work. The public v0.1 ZIP does not include these changes.
+**New in v0.2:** organized asset folders with an **All** folder for the complete model collection, flesh sounds and blood when hitting NPCs, and steering-wheel grips with better foot placement in supported cars. Existing saved references still work.
 
 ![An Infernus, NRG-500 and street props spawned in Sandbox](docs/images/sandbox-vehicles-and-props.png)
 
@@ -35,21 +35,23 @@ Click a preview to download the MP4 recording.
 | **Motorcycle riding** | **Helicopter flight** |
 | [![Download motorcycle riding](docs/images/motorcycle-riding-preview.jpg)](https://raw.githubusercontent.com/crosschainer/sade-mount/main/docs/videos/motorcycle-riding.mp4) | [![Download helicopter flight](docs/images/helicopter-flight-preview.jpg)](https://raw.githubusercontent.com/crosschainer/sade-mount/main/docs/videos/helicopter-flight.mp4) |
 
-## What's included in v0.1
+## What's included
 
-- A featured collection with recognizable characters and useful assets near the top.
+- Separate folders for NPCs, Vehicles, Common buildings, Ramps, Street props and Construction props, plus **All** for every source model.
 - Static and skeletal models, textures, materials, and authored collision.
 - Sound effects, dialogue, radio tracks, and animation banks.
 - Animated pedestrians, with gang members that fight rivals and retaliate when attacked.
 - Original character voices for nearby greetings, gang fights and reactions.
+- Flesh hit sounds, blood effects and wound decals when attacking NPCs.
 - Limb-by-limb physgun posing, using Sandbox's normal grab and freeze controls.
 - The full GTA weapon roster, with original models, animations, sounds and bullet tracers for NPC fights.
 - Cars, motorcycles, bicycles, boats, helicopters and planes with enterable seats.
+- Hands on bike handlebars and supported car steering wheels, with car occupants' feet fitted into the cabin.
 - Original engine sounds with changing revs, gear shifts and throttle response.
 
 Assets load when needed and are reused on subsequent loads. Navigation-enabled maps let NPCs move around obstacles. Without navigation, they remain in place with their idle animation.
 
-Grove Street, Ballas, Vagos, Aztecas, Rifa, Triads, Da Nang Boys and Mafia use their original affiliations. CJ, Big Smoke and other featured characters appear first, with weapon loadouts alongside the regular models. Spawning a character or vehicle from Sandbox's Mounts tab activates its behavior automatically.
+Grove Street, Ballas, Vagos, Aztecas, Rifa, Triads, Da Nang Boys and Mafia use their original affiliations. CJ, Big Smoke and other recognizable characters appear first. Spawning a character or vehicle from Sandbox's Mounts tab activates its behavior automatically.
 
 ![Characters and props in Sandbox's Mounts tab](docs/images/spawn-menu.png)
 
@@ -64,7 +66,7 @@ Near a vehicle, press **E** on the left side to drive, or on the right side to t
 | Helicopters | W/S climb and descend, A/D yaw, arrow keys pitch and roll |
 | Planes | W/S increase and decrease throttle, A/D yaw, arrow keys pitch and roll |
 
-Vehicle handling uses the original handling data with an arcade physics adapter. Trains, trailers and RC vehicles are available as models. Full-world loading, missions and vehicle combat are outside this release. Materials are translated into s&box shaders, so some Unreal effects look different.
+Vehicle handling uses the original handling data with an arcade physics adapter. Hand and foot fitting uses the Human avatar and verified vehicle geometry; unsupported seats keep their normal pose. Trains, trailers and RC vehicles are available as models under **All**. Full-world loading, missions and vehicle combat are outside this release. Materials are translated into s&box shaders, so some Unreal effects look different.
 
 ## Settings
 
@@ -107,7 +109,7 @@ Open `Demo/sade_preview/sade_preview.sbproj` in s&box.
 
 `src/Sade.Mount` creates s&box resources and runs NPC and vehicle behavior. `src/Sade.Reader` reads Unreal packages in an isolated assembly context. `src/Sade.Contracts` defines the shared data types; `src/Sade.Formats` reads classic GTA animation and collision formats. No project helper or engine modification is needed.
 
-Resources use `mount://sade/` paths. The `models`, `materials`, `textures`, and `sounds` folders preserve the source hierarchy. `animations` contains model variants with compatible clips. `pedestrians` and `vehicles` also provide prefabs for scene editing.
+Resources use `mount://sade/` paths. The `models`, `materials`, `textures`, and `sounds` paths preserve the source hierarchy. Animation variants, loadouts and legacy prefab paths remain registered for dependencies and saved scenes, while Sandbox's model browser shows the curated folders and **All**.
 
 Missing or malformed authored collision is reported by source asset. Aircraft with empty PhysicsAssets use reported convex collision derived from their intact mesh. Weapon projectile flight, area effects and vehicle physics use s&box implementations.
 

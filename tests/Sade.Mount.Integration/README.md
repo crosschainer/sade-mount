@@ -1,4 +1,4 @@
-The scripts below are trusted `run_csharp` probes for an editor with the matching source build of the mount installed. CuratedBrowser.cs, CuratedScenery.cs and PedestrianHitFeedback.cs cover the next unreleased update; they require changes that are not in the public v0.1 ZIP.
+The scripts below are trusted `run_csharp` probes for an editor with the matching mount version installed. CuratedBrowser.cs, CuratedScenery.cs, PedestrianHitFeedback.cs and CarOccupants.cs cover features included in v0.2.
 
 CuratedBrowser.cs audits the mounted registry without decoding models. It checks the 322 curated choices (67 NPCs, 191 vehicles and 64 scenery models) plus the complete static/skeletal source model collection under All, the seven intended folders, CJ/Big Smoke priority, unique paths and agreement between the folder tree and Sandbox's model list. The recursive root list includes both collections. Source weapon models are available through All; legacy aliases and generated loadout/animation variants stay hidden while saved references still resolve. Run it before CuratedScenery.cs when measuring how many models were already decoded during browsing.
 

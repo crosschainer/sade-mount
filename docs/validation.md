@@ -2,7 +2,7 @@
 
 Checked on Windows with s&box 26.10.27c, the Steam Definitive Edition build 16391096 and .NET 10. The mount reads the two installed PAK archives; extracted assets are kept out of the repository and release.
 
-These notes include the next update's source-build checks. The public v0.1 release remains unchanged; the curated spawn menu, pedestrian flesh impacts and car occupant poses described below are not yet published in a release ZIP.
+These notes cover v0.2, including the curated spawn menu, pedestrian flesh impacts and car occupant poses.
 
 ## Automated checks
 
