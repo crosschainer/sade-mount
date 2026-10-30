@@ -160,9 +160,23 @@ internal sealed class ModelLoader(string id, string? animationId = null, string?
         return new StaticVertex(position, CoordinateSpace.Direction(source.Normal), new Vector4(tangent.x, tangent.y, tangent.z, -source.Tangent.W), new Vector2(source.UV.X, source.UV.Y), new Color32(ToByte(source.Color.X), ToByte(source.Color.Y), ToByte(source.Color.Z), ToByte(source.Color.W)));
     }
     private static byte ToByte(float value) => (byte)Math.Clamp((int)MathF.Round(value * 255), 0, 255);
+    internal static Surface SurfaceFor(SurfaceAudio audio) => Surface.FindByName(audio switch
+    {
+        SurfaceAudio.Grass or SurfaceAudio.LongGrass => "grass",
+        SurfaceAudio.Sand or SurfaceAudio.Gravel => "dirt",
+        SurfaceAudio.Wood => "wood", SurfaceAudio.Water => "water",
+        SurfaceAudio.Metal => "metal", SurfaceAudio.Tile => "ceramic", _ => "default"
+    });
     internal static void AddCollision(ModelBuilder builder, CollisionData data)
     {
-        if (data.Indices.Length > 0) builder.AddCollisionMesh(data.Vertices.Select(CoordinateSpace.Position).ToArray().AsSpan(), CoordinateSpace.Indices(data.Indices).AsSpan());
+        if (data.Indices.Length > 0)
+        {
+            if (data.Surfaces.Length != 0 && data.Surfaces.Length != data.Indices.Length / 3) throw new InvalidDataException("Collision surface count does not match its triangles.");
+            if (data.Surfaces.Length > 0)
+                foreach (var name in new[] { "default", "grass", "dirt", "dirt", "wood", "water", "metal", "grass", "ceramic", "default" })
+                    builder.AddSurface(Surface.FindByName(name));
+            builder.AddCollisionMesh(data.Vertices.Select(CoordinateSpace.Position).ToArray().AsSpan(), CoordinateSpace.Indices(data.Indices).AsSpan(), data.Surfaces.Select(s => (byte)s).ToArray().AsSpan());
+        }
         foreach (var hull in data.Hulls) if (hull.Length >= 4) builder.AddCollisionHull(hull.Select(CoordinateSpace.Position).ToArray().AsSpan());
         foreach (var box in data.Boxes) builder.AddCollisionBox(new Vector3(box.Extents.X, box.Extents.Y, box.Extents.Z) * CoordinateSpace.UnitsPerCentimeter, CoordinateSpace.Position(box.Center), CoordinateSpace.Rotation(box.Rotation));
         foreach (var sphere in data.Spheres) builder.AddCollisionSphere(sphere.Radius * CoordinateSpace.UnitsPerCentimeter, CoordinateSpace.Position(sphere.Center));

@@ -9,7 +9,7 @@ internal static class WorldModelBuilder
 {
     internal static Model Build(ModelData data, string name, string?[] overrides, Func<string?, Material> material, float lodDistance)
     {
-        var builder = Model.Builder.WithName(name);
+        var builder = Model.Builder.WithName(name).WithMass(data.WorldProp?.Mass ?? 1000);
         foreach (var part in data.Parts)
         {
             if (part.Lod > 3 || part.Vertices.Length == 0 || part.Indices.Length == 0) continue;

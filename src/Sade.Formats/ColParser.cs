@@ -74,25 +74,26 @@ public static class ColParser
         {
             var center = ReadPosition(ref sr);
             var radius = ReadRadius(ref sr);
-            sr.Skip(4);
-            spheres[i] = new CollisionSphere(center, radius);
+            var material = sr.Take(1)[0]; sr.Skip(3);
+            spheres[i] = new CollisionSphere(center, radius) { MaterialId = material };
         }
         var br = Section(r.Data, boxOffset, boxesCount, 28, minimumOffset);
         var boxes = ReadBoxes(ref br, boxesCount);
         var fr = Section(r.Data, faceOffset, facesCount, 8, minimumOffset);
         var indices = new int[facesCount * 3];
+        var materials = new byte[facesCount];
         var vertexCount = 0;
         for (var i = 0; i < facesCount; i++)
         {
             var a = fr.UInt16(); var b = fr.UInt16(); var c = fr.UInt16();
-            fr.Skip(2);
+            materials[i] = fr.Take(1)[0]; fr.Skip(1);
             indices[i * 3] = a; indices[i * 3 + 1] = c; indices[i * 3 + 2] = b;
             vertexCount = Math.Max(vertexCount, Math.Max(a, Math.Max(b, c)) + 1);
         }
         var vr = Section(r.Data, vertexOffset, vertexCount, 6, minimumOffset);
         var vertices = new Vector3[vertexCount];
         for (var i = 0; i < vertices.Length; i++) vertices[i] = GtaCoordinates.ToUnreal(new Vector3(vr.Int16(), vr.Int16(), vr.Int16()) / 128f);
-        return new CollisionData { Source = source, Vertices = vertices, Indices = indices, Boxes = boxes, Spheres = spheres };
+        return new CollisionData { Source = source, Vertices = vertices, Indices = indices, MaterialIds = materials, Boxes = boxes, Spheres = spheres };
     }
 
     private static CollisionData ReadLegacy(ref BinaryCursor r, string source)
@@ -103,8 +104,8 @@ public static class ColParser
         {
             var radius = ReadRadius(ref r);
             var center = ReadPosition(ref r);
-            r.Skip(4);
-            spheres[i] = new CollisionSphere(center, radius);
+            var material = r.Take(1)[0]; r.Skip(3);
+            spheres[i] = new CollisionSphere(center, radius) { MaterialId = material };
         }
         var lineCount = r.Count(r.Remaining / 24, "line");
         r.Skip(checked(lineCount * 24));
@@ -115,13 +116,14 @@ public static class ColParser
         for (var i = 0; i < vertexCount; i++) vertices[i] = ReadPosition(ref r);
         var faceCount = r.Count(r.Remaining / 16, "face");
         var indices = new int[checked(faceCount * 3)];
+        var materials = new byte[faceCount];
         for (var i = 0; i < faceCount; i++)
         {
-            var a = r.Int32(); var b = r.Int32(); var c = r.Int32(); r.Skip(4);
+            var a = r.Int32(); var b = r.Int32(); var c = r.Int32(); materials[i] = r.Take(1)[0]; r.Skip(3);
             if ((uint)a >= vertexCount || (uint)b >= vertexCount || (uint)c >= vertexCount) throw new InvalidDataException("Collision triangle references a missing vertex.");
             indices[i * 3] = a; indices[i * 3 + 1] = c; indices[i * 3 + 2] = b;
         }
-        return new CollisionData { Source = source, Vertices = vertices, Indices = indices, Boxes = boxes, Spheres = spheres };
+        return new CollisionData { Source = source, Vertices = vertices, Indices = indices, MaterialIds = materials, Boxes = boxes, Spheres = spheres };
     }
 
     private static BinaryCursor Section(ReadOnlySpan<byte> record, uint offset, int count, int stride, int minimumOffset)
@@ -138,9 +140,9 @@ public static class ColParser
         var boxes = new CollisionBox[count];
         for (var i = 0; i < count; i++)
         {
-            var a = ReadPosition(ref r); var b = ReadPosition(ref r); r.Skip(4);
+            var a = ReadPosition(ref r); var b = ReadPosition(ref r); var material = r.Take(1)[0]; r.Skip(3);
             var min = Vector3.Min(a, b); var max = Vector3.Max(a, b);
-            boxes[i] = new CollisionBox((min + max) * 0.5f, (max - min) * 0.5f, Quaternion.Identity);
+            boxes[i] = new CollisionBox((min + max) * 0.5f, (max - min) * 0.5f, Quaternion.Identity) { MaterialId = material };
         }
         return boxes;
     }

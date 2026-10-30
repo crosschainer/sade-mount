@@ -34,6 +34,8 @@ var tests = new (string Name, Action Run)[]
     ("COL2/COL3 authored primitives and reflected triangle winding", TestCollision),
     ("Collision rejects out-of-range offsets and indices", TestBadCollision),
     ("World-baked geometry replaces displaced local COL without changing aligned meshes", TestBakedCollision),
+    ("GTA surface audio IDs survive parsing and transfer to detailed collision", SurfaceTests.Run),
+    ("Only authored small loose objects become movable world props", WorldPropTests.Run),
     ("Binding samples endpoints, preserves reference channels, and removes travel", TestBinding),
     ("Binding catches incompatible and duplicate track assignments", TestBadBinding),
     ("CJ arm helpers retain their bind pose without changing classic torso tracks", TestPlayerHelpers),
@@ -166,6 +168,11 @@ static void TestCollision()
         NearVector(m.Collision.Spheres[0].Center, new Vector3(100, -200, 300));
         Near(m.Collision.Spheres[0].Radius, 50);
         NearVector(m.Collision.Boxes[0].Extents, new Vector3(100, 200, 300));
+        var surfaces = Collision(version);
+        var header = version == "COL3" ? 120 : 108;
+        surfaces[header + 16] = 6; surfaces[header + 44] = 9; surfaces[^2] = 13;
+        var tagged = ColParser.Parse(surfaces).Single().Collision;
+        Equal(tagged.MaterialIds[0], (byte)13); Equal(tagged.Spheres[0].MaterialId, (byte)6); Equal(tagged.Boxes[0].MaterialId, (byte)9);
     }
     Equal(ColParser.Parse([.. Collision("COL2"), .. Collision("COL3"), 0, 0]).Count, 2);
 }

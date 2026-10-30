@@ -18,6 +18,7 @@ public interface IGameReader : IDisposable
 {
     IReadOnlyList<AssetEntry> Initialize(ReaderOptions options, Action<Diagnostic>? report = null);
     ModelData LoadModel(string id);
+    ModelData LoadWorldModel(string id);
     TextureData LoadTexture(string id);
     MaterialData LoadMaterial(string id);
     SoundData LoadSound(string id);
@@ -39,13 +40,18 @@ public readonly record struct BoneIndices(int X, int Y, int Z, int W);
 public readonly record struct VertexData(Vector3 Position, Vector3 Normal, Vector4 Tangent, Vector2 UV, Vector4 Color, BoneIndices Bones, Vector4 Weights);
 public sealed record MeshPartData(string Name, string? MaterialId, VertexData[] Vertices, int[] Indices, int Lod = 0);
 public sealed record BoneData(string Name, int Parent, TransformData LocalBind, TransformData WorldBind);
-public sealed record CollisionBox(Vector3 Center, Vector3 Extents, Quaternion Rotation);
-public sealed record CollisionSphere(Vector3 Center, float Radius);
+public enum SurfaceAudio : byte { Concrete, Grass, Sand, Gravel, Wood, Water, Metal, LongGrass, Tile, Unknown }
+public sealed record CollisionBox(Vector3 Center, Vector3 Extents, Quaternion Rotation) { public byte MaterialId { get; init; } }
+public sealed record CollisionSphere(Vector3 Center, float Radius) { public byte MaterialId { get; init; } }
 public sealed record CollisionCapsule(Vector3 Start, Vector3 End, float Radius);
 public sealed record CollisionData
 {
     public Vector3[] Vertices { get; init; } = [];
     public int[] Indices { get; init; } = [];
+    /// <summary>Original GTA material ID for each triangle, in the same order as Indices / 3.</summary>
+    public byte[] MaterialIds { get; init; } = [];
+    /// <summary>Surface audio groups resolved from the installed surfaud.dat, including transferred static geometry.</summary>
+    public SurfaceAudio[] Surfaces { get; init; } = [];
     public Vector3[][] Hulls { get; init; } = [];
     public CollisionBox[] Boxes { get; init; } = [];
     public CollisionSphere[] Spheres { get; init; } = [];
@@ -62,7 +68,10 @@ public sealed record ModelData
     public string? SkeletonId { get; init; }
     public Vector3 BoundsMin { get; init; }
     public Vector3 BoundsMax { get; init; }
+    public WorldPropData? WorldProp { get; init; }
 }
+
+public sealed record WorldPropData(float Mass, SurfaceAudio Surface);
 
 public sealed record TextureMip(int Width, int Height, byte[] Data);
 public sealed record TextureData(string Id, string Format, bool Srgb, TextureMip[] Mips);

@@ -59,6 +59,23 @@ if (args.Contains("--installed"))
         Check(Vector3.Distance(collisionMin, model.BoundsMin) < 2 && Vector3.Distance(collisionMax, model.BoundsMax) < 2, name + " collision must occupy the visible mesh bounds.");
     }
     Console.WriteLine("PASS installed storm drain and ground collision alignment.");
+    foreach (var name in new[] { "lae2_landhub05", "lae2_roads52", "stormdrainlae2_03" })
+    {
+        var id = ids.Single(id => id.EndsWith($"/SM_{name}.SM_{name}", StringComparison.OrdinalIgnoreCase));
+        var model = reader.LoadWorldModel(id);
+        Check(model.Collision.Surfaces.Length == model.Collision.Indices.Length / 3 && model.Collision.Surfaces.Length > 0, name + " must carry one surface group per detailed triangle.");
+        Check(!model.Collision.Surfaces.Contains(SurfaceAudio.Unknown), name + " must resolve the installed surface audio IDs.");
+        if (name == "lae2_landhub05") Check(model.Collision.Surfaces.Contains(SurfaceAudio.Grass) && model.Collision.Surfaces.Contains(SurfaceAudio.Concrete), "The grass and paving around Grove Street must stay distinct after scaled world-space transfer.");
+    }
+    Console.WriteLine("PASS installed surface groups on roads, grass and world-baked terrain.");
+    foreach (var (name, mass) in new[] { ("blackbag2", 100f), ("cardboardbox", 10f) })
+    {
+        var prop = reader.LoadWorldModel($"/Game/SanAndreas/Environment/Props/SM_{name}.SM_{name}");
+        Check(prop.WorldProp?.Mass == mass && prop.Collision.Indices.Length == 0 && prop.Collision.Hulls.Length + prop.Collision.Boxes.Length + prop.Collision.Spheres.Length > 0,
+            name + " must retain its source mass and use convex movable collision.");
+    }
+    Check(reader.LoadWorldModel(house.ModelId).WorldProp is null && reader.LoadWorldModel(ground.ModelId).WorldProp is null, "Houses and terrain must stay fixed.");
+    Console.WriteLine("PASS installed loose props and protected buildings/terrain.");
     var road = reader.LoadModel(ids.Single(id => id.EndsWith("/SM_lae2_roads52.SM_lae2_roads52", StringComparison.OrdinalIgnoreCase)));
     Check(road.Collision.Hulls.Length > 0, "The reported invisible wall must exercise the source road's convex collision.");
     var staticRoad = BakedMeshCollision.ForStaticWorld(road);

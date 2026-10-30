@@ -1,19 +1,19 @@
 using System.Diagnostics;
 using Sandbox;
 using Sade.Contracts;
-using Sade.Formats;
 
 namespace Sade.Mount;
 
 /// <summary>One background decode and incremental GPU uploads, with shared textures and an idle LRU budget.</summary>
 internal sealed class WorldAssets(SadeMount mount) : IDisposable
 {
-    internal sealed class Asset(Model model, string[] materials, long bytes, bool collision)
+    internal sealed class Asset(Model model, string[] materials, long bytes, bool collision, WorldPropData? prop)
     {
         internal readonly Model Model = model;
         internal readonly string[] Materials = materials;
         internal readonly long Bytes = bytes;
         internal readonly bool HasCollision = collision;
+        internal readonly WorldPropData? Prop = prop;
         internal int Users;
         internal long LastUse;
         internal double ProtectedUntil;
@@ -70,9 +70,7 @@ internal sealed class WorldAssets(SadeMount mount) : IDisposable
     private Prepared Decode(WorldPlacementData placement, HashSet<string> cachedTextures, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
-        var source = mount.Reader.LoadModel(placement.ModelId);
-        var model = BakedMeshCollision.ForStaticWorld(source);
-        if (!ReferenceEquals(source, model)) mount.Report(new(model.Id, model.Collision.Source));
+        var model = mount.Reader.LoadWorldModel(placement.ModelId);
         var mats = new Dictionary<string, MaterialData>(StringComparer.OrdinalIgnoreCase);
         var tex = new Dictionary<string, TextureData>(StringComparer.OrdinalIgnoreCase);
         foreach (var id in model.Parts.Where(p => p.Lod <= 3).Select(p => WorldModelBuilder.MaterialId(p, placement.Materials)).OfType<string>().Distinct(StringComparer.OrdinalIgnoreCase))
@@ -148,7 +146,7 @@ internal sealed class WorldAssets(SadeMount mount) : IDisposable
                         Math.Max(2000, mount.Settings.LodDistance));
                     var geometry = data.Parts.Sum(p => (long)p.Vertices.Length * 64 + (long)p.Indices.Length * 4)
                         + data.Collision.Vertices.LongLength * 12 + data.Collision.Indices.LongLength * 4;
-                    models[pendingKey!] = new(model, heldMaterials.ToArray(), geometry, !data.Collision.IsEmpty) { LastUse = ++serial, ProtectedUntil = Time.NowDouble + 3 };
+                    models[pendingKey!] = new(model, heldMaterials.ToArray(), geometry, !data.Collision.IsEmpty, data.WorldProp) { LastUse = ++serial, ProtectedUntil = Time.NowDouble + 3 };
                     bytes += geometry; heldMaterials.Clear(); buildTextures.Clear(); prepared = null; pendingKey = null;
                     cancellation?.Dispose(); cancellation = null;
                     Trim(); return;

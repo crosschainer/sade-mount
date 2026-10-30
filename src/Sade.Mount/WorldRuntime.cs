@@ -81,13 +81,16 @@ internal static class WorldRuntime
 
     private sealed class State : IDisposable
     {
-        private sealed record Instance(GameObject Object, ModelCollider? Collider, WorldAssets.Asset Asset);
+        private sealed record Instance(GameObject Object, ModelCollider? Collider, WorldAssets.Asset Asset, Rigidbody? Body);
+        private sealed record PropSnapshot(Transform Transform, bool MotionEnabled);
         private readonly GameObject root;
         private readonly SadeMount mount;
         private readonly WorldAssets assets;
         private readonly WorldSpatialIndex spatial;
         private readonly Dictionary<int, Instance> instances = [];
         private readonly HashSet<int> resident = [];
+        private readonly Dictionary<int, PropSnapshot> changedProps = [];
+        private readonly HashSet<int> removedProps = [];
         private List<(int Index, float DistanceSquared)> wanted = [];
         private Queue<(int Index, float DistanceSquared)> creates = [];
         private HashSet<string> needed = new(StringComparer.Ordinal);
@@ -114,7 +117,9 @@ internal static class WorldRuntime
             if (Time.NowDouble >= planAt || wanted.Count == 0)
             {
                 focus = Focus();
+                CaptureProps();
                 wanted = spatial.Query(focus, mount.Settings.WorldViewDistanceMeters, resident, 1.2f);
+                wanted = IncludeChangedProps(wanted);
                 var keep = wanted.Select(p => p.Index).ToHashSet();
                 foreach (var id in resident.Where(id => !keep.Contains(id)).ToArray()) Remove(id);
                 creates = new(wanted.Where(p => !resident.Contains(p.Index)));
@@ -122,7 +127,7 @@ internal static class WorldRuntime
                 var collisionRadius = Math.Clamp(mount.Settings.WorldCollisionDistanceMeters, 40, 1000) * 100;
                 foreach (var entry in wanted)
                     if (instances.TryGetValue(entry.Index, out var loaded) && loaded.Collider.IsValid())
-                        loaded.Collider.Enabled = spatial.Data.Placements[entry.Index].Collision && entry.DistanceSquared <= collisionRadius * collisionRadius;
+                        loaded.Collider.Enabled = spatial.Data.Placements[entry.Index].Collision && (loaded.Body.IsValid() || entry.DistanceSquared <= collisionRadius * collisionRadius);
                 planAt = Time.NowDouble + .25;
             }
             assets.Tick(budget * .65f);
@@ -147,8 +152,21 @@ internal static class WorldRuntime
                 obj.Tags.Add(GeometryTag);
                 if (placement.Visible) obj.AddComponent<ModelRenderer>().Model = asset.Model;
                 ModelCollider? collider = null;
-                if (asset.HasCollision) { collider = obj.AddComponent<ModelCollider>(); collider.Model = asset.Model; collider.Enabled = collision; }
-                instances.Add(id, new(obj, collider, asset)); resident.Add(id);
+                Rigidbody? body = null;
+                var size = asset.Model.Bounds.Size * Vector3.Abs(obj.WorldScale);
+                if (asset.Prop is { } prop && Math.Max(size.x, Math.Max(size.y, size.z)) <= 800 * CoordinateSpace.UnitsPerCentimeter)
+                {
+                    if (changedProps.TryGetValue(id, out var snapshot)) obj.LocalTransform = snapshot.Transform;
+                    // A loose object needs its own root so Sandbox tools operate on just that prop.
+                    obj.SetParent(null, true); obj.Tags.Add("prop"); obj.Tags.Add("sade_world_prop");
+                    body = obj.Components.Create<Rigidbody>(false); body.MassOverride = prop.Mass;
+                    body.StartAsleep = true; body.MotionEnabled = snapshot?.MotionEnabled ?? true;
+                    collider = obj.AddComponent<ModelCollider>(); collider.Model = asset.Model;
+                    collider.Surface = ModelLoader.SurfaceFor(prop.Surface);
+                    body.Enabled = true;
+                }
+                else if (asset.HasCollision) { obj.Tags.Add("world"); collider = obj.AddComponent<ModelCollider>(); collider.Model = asset.Model; collider.Enabled = collision; }
+                instances.Add(id, new(obj, collider, asset, body)); resident.Add(id);
                 if (++created >= 24 || watch.Elapsed.TotalMilliseconds >= budget) break;
             }
             RemoveLoadingDeck();
@@ -166,6 +184,39 @@ internal static class WorldRuntime
                 result.Add(Spawn(start?.Replace("sade_world_", "") ?? "grove"));
             }
             return result;
+        }
+        private void CaptureProps()
+        {
+            foreach (var (id, instance) in instances.ToArray())
+            {
+                if (instance.Asset.Prop is null) continue;
+                if (!instance.Object.IsValid()) { removedProps.Add(id); Remove(id); continue; }
+                if (!instance.Body.IsValid()) continue;
+                // Collider creation can apply the model's mass after Rigidbody initialization.
+                if (instance.Body.MotionEnabled && instance.Body.MassOverride > 0 && Math.Abs(instance.Body.Mass - instance.Body.MassOverride) > .01f && instance.Body.PhysicsBody.IsValid())
+                    instance.Body.PhysicsBody.Mass = instance.Body.MassOverride;
+                var local = root.WorldTransform.ToLocal(instance.Object.WorldTransform);
+                var original = CoordinateSpace.Transform(spatial.Data.Placements[id].Transform);
+                if (changedProps.ContainsKey(id) || local.Position.Distance(original.Position) > 1
+                    || local.Rotation.Forward.Distance(original.Rotation.Forward) > .01f || local.Rotation.Up.Distance(original.Rotation.Up) > .01f
+                    || local.Scale.Distance(original.Scale) > .01f || !instance.Body.MotionEnabled)
+                    changedProps[id] = new(local, instance.Body.MotionEnabled);
+            }
+        }
+        private List<(int Index, float DistanceSquared)> IncludeChangedProps(List<(int Index, float DistanceSquared)> query)
+        {
+            var result = query.Where(p => !removedProps.Contains(p.Index)).ToDictionary(p => p.Index, p => p.DistanceSquared);
+            var limit = Math.Min(128, Math.Clamp(mount.Settings.WorldViewDistanceMeters, 64, 2000)) * 100;
+            foreach (var (id, snapshot) in changedProps)
+            {
+                if (removedProps.Contains(id)) { result.Remove(id); continue; }
+                var at = CoordinateSpace.SourcePosition(snapshot.Transform.Position);
+                var distance = focus.Count == 0 ? float.MaxValue : focus.Min(p => N.Vector3.DistanceSquared(at, p));
+                if (distance <= limit * limit) result[id] = distance;
+                else result.Remove(id);
+            }
+            return result.Select(p => (Index: p.Key, DistanceSquared: p.Value))
+                .OrderBy(p => spatial.Data.Placements[p.Index].Prominent ? p.DistanceSquared * .15f : p.DistanceSquared + 25_000_000).ThenBy(p => p.Index).ToList();
         }
         private void RemoveLoadingDeck()
         {

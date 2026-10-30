@@ -204,6 +204,8 @@ public sealed partial class GameReader : IGameReader
             provider = null;
             loadedContainers.Clear();
             world = null;
+            surfaceAudio = null;
+            worldProps = null;
             loadedBanks.Clear();
             legacyCollision = null;
             pedestrianMetadata = null;
