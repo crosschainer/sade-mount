@@ -2,6 +2,8 @@
 
 Checked on Windows with s&box 26.10.27c, the Steam Definitive Edition build 16391096 and .NET 10. The mount reads the two installed PAK archives; extracted assets are kept out of the repository and release.
 
+These notes include the next update's source-build checks. The public v0.1 release remains unchanged; the curated spawn menu and pedestrian flesh impacts described below are not yet published in a release ZIP.
+
 ## Automated checks
 
 `scripts/Release.ps1` runs the format, weapon, aiming, texture, prefab, presentation, vehicle, reader and bootstrap checks before packaging. Set `SADE_GAME_DIR` to the GTA installation directory to include the reader's installed-game checks.
@@ -10,8 +12,14 @@ The checks cover malformed animation and collision records, animation timing and
 
 The installed-game audits read 281 animation banks, 1,101 native animation sequences, all 47 weapon definitions and the source gang relationships. These are parsing checks; they do not establish that every asset or weapon has been exercised in gameplay.
 
+Pure presentation checks cover exact curated source identities, duplicate menu paths, NPC exclusions, vehicle family selection and locale-independent names. The curated selection excludes incomplete character parts, cutscene duplicates, trains, trailers and remote-control vehicles; their source models remain browsable under All.
+
 ## Editor checks
 
+- The curated selection was verified at 322 choices: 67 NPCs, 191 vehicles and 64 scenery assets, with CJ and Big Smoke first. All adds the complete static and skeletal source model collection, including weapon models and items omitted from the curated selection. The seven top-level folders are All, Common buildings, Construction props, NPCs, Ramps, Street props and Vehicles. Sandbox's recursive root list includes both the curated choices and All; it is not limited to 322 models. CuratedBrowser.cs checks agreement between this tree and the Sandbox model list.
+- Existing model, material, texture, sound, loadout and animation paths remain registered for dependencies and saved scenes. Browser registration uses metadata; it does not decode every model. The All aliases resolve the existing source resources. Legacy aliases and generated pedestrian/animation-bank combinations remain hidden, while the underlying source models are available through All.
+- All 64 curated scenery models decoded with finite bounds, renderable geometry and nonempty collision. A private engine overview of the full selection was captured and inspected. This verifies the chosen scenery, rather than the game's entire environment catalog.
+- CJ and Big Smoke report `flesh.surface` through their articulated limb colliders and fallback capsule. Sandbox's actual melee impact method selects the stock `ImpactHard` flesh sound and produces one blood burst plus one wound decal. Damage reaches the NPC controller and sets its attacker for retaliation. The test also repairs legacy generic collider surfaces without recreating, moving or unfreezing the rig; frozen posing remains intact, and bullet impacts receive no duplicate effects from damage handling. This invokes the real weapon methods in a temporary scene; it does not inject attack input or establish multiplayer behavior.
 - Static props, vegetation and pedestrian materials, including a comparison of decoded source textures with GPU texture readback.
 - Big Smoke and generic pedestrians: animated idle, navigation movement, facing direction and gang combat.
 - CJ's vest and jeans use their modular player meshes, including the jeans' original UV layout. The dressed result was checked in an engine render. His DE arm helpers keep their reference pose. A live walk sampled over four seconds stayed in `WALK_player` through three complete loops without mid-cycle resets.

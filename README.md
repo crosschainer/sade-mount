@@ -21,6 +21,8 @@ When updating, close s&box and replace the `sade` folder with the new release. K
 
 [Release notes and downloads](https://github.com/crosschainer/sade-mount/releases/tag/v0.1)
 
+**Next update — unreleased, available in source builds:** curated folders organize NPCs, vehicles, buildings, ramps and props; **All** exposes the complete source model library. NPC hits gain flesh sounds, blood and wound decals. Saved references still work. The public v0.1 ZIP does not include these changes.
+
 ![An Infernus, NRG-500 and street props spawned in Sandbox](docs/images/sandbox-vehicles-and-props.png)
 
 ## See it in Sandbox
@@ -33,7 +35,7 @@ Click a preview to download the MP4 recording.
 | **Motorcycle riding** | **Helicopter flight** |
 | [![Download motorcycle riding](docs/images/motorcycle-riding-preview.jpg)](https://raw.githubusercontent.com/crosschainer/sade-mount/main/docs/videos/motorcycle-riding.mp4) | [![Download helicopter flight](docs/images/helicopter-flight-preview.jpg)](https://raw.githubusercontent.com/crosschainer/sade-mount/main/docs/videos/helicopter-flight.mp4) |
 
-## What's included
+## What's included in v0.1
 
 - A featured collection with recognizable characters and useful assets near the top.
 - Static and skeletal models, textures, materials, and authored collision.
