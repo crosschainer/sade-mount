@@ -55,7 +55,12 @@ public sealed partial class GameReader
             }
             else throw new NotSupportedException($"{id} is {asset.ExportType}, not a static or skeletal mesh.");
             if (model.Parts.Length == 0) throw new InvalidDataException($"{id} has no readable mesh sections.");
-            if (model.Collision.IsEmpty && FindLegacyCollision(id) is { } fallback) model = model with { Collision = fallback };
+            if (model.Collision.IsEmpty && FindLegacyCollision(id) is { } fallback)
+            {
+                var collision = BakedMeshCollision.Resolve(model, fallback);
+                if (!ReferenceEquals(collision, fallback)) report?.Invoke(new(id, collision.Source));
+                model = model with { Collision = collision };
+            }
             if (model.Collision.IsEmpty && id.StartsWith("/Game/SanAndreas/Vehicles/", StringComparison.OrdinalIgnoreCase))
             {
                 // Several aircraft ship an empty PhysicsAsset and no matching legacy COL record.

@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Sade.Contracts/Sade.Contracts.csproj" />
+    <Compile Include="../Sade.Formats/BakedMeshCollision.cs" Link="BakedMeshCollision.cs" />
     <Reference Include="$(SboxDirectory)/bin/managed/Sandbox.System.dll" Private="false" />
     <Reference Include="$(SboxDirectory)/bin/managed/Sandbox.Engine.dll" Private="false" />
     <Reference Include="$(SboxDirectory)/bin/managed/Sandbox.Filesystem.dll" Private="false" />

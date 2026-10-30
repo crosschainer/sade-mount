@@ -70,6 +70,7 @@ public sealed partial class SadeMount : BaseGameMount
             RegisterVehicles(context);
             RegisterCuratedProps(context);
             RegisterAllModels(context, catalog);
+            RegisterWorld(context);
             foreach (var item in pending) context.Add(item.Type, item.Relative, item.Loader);
             RegisterLoadouts(context, representatives);
 
@@ -95,6 +96,7 @@ public sealed partial class SadeMount : BaseGameMount
             InvalidateOldPreviews();
             PedestrianRuntime.Start();
             VehicleRuntime.Start();
+            WorldRuntime.Start(this);
             IsMounted = true;
             browser = new MountBrowser(this);
             browser.Schedule();
@@ -154,6 +156,8 @@ public sealed partial class SadeMount : BaseGameMount
         browser?.Dispose(); browser = null;
         PedestrianRuntime.Stop();
         VehicleRuntime.Stop();
+        Interlocked.Increment(ref worldGeneration);
+        WorldRuntime.Stop(); worldPreparation = null;
         weapons.Clear();
         paths.Clear(); entries.Clear(); modelData.Clear(); walkSpeeds.Clear();
         Reader?.Dispose(); Reader = null!;

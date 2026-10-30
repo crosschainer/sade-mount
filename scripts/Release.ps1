@@ -14,9 +14,9 @@ $packageRoot = Join-Path $artifactsRoot 'package\sade'
 Assert-SadePackage $packageRoot
 if (-not $SkipTests) {
     $dotnetExecutable = Get-SadeDotnet $DotnetPath
-    foreach ($project in @('Sade.Formats.Tests', 'Sade.Weapon.Tests', 'Sade.Aiming.Tests', 'Sade.Texture.Tests', 'Sade.Prefab.Tests', 'Sade.Presentation.Tests', 'Sade.Reader.Tests', 'Sade.Vehicle.Tests', 'Sade.Drivetrain.Tests')) {
+    foreach ($project in @('Sade.Formats.Tests', 'Sade.Weapon.Tests', 'Sade.Aiming.Tests', 'Sade.Texture.Tests', 'Sade.Prefab.Tests', 'Sade.Presentation.Tests', 'Sade.Reader.Tests', 'Sade.Vehicle.Tests', 'Sade.Drivetrain.Tests', 'Sade.World.Tests')) {
         $testArguments = @('run', '--project', (Join-Path $repoRoot "tests\$project"), '-c', 'Release')
-        if ($project -eq 'Sade.Vehicle.Tests' -and $env:SADE_GAME_DIR) { $testArguments += @('--', '--installed') }
+        if ($project -in @('Sade.Vehicle.Tests', 'Sade.World.Tests') -and $env:SADE_GAME_DIR) { $testArguments += @('--', '--installed') }
         Invoke-SadeDotnet $dotnetExecutable $testArguments
     }
     Invoke-SadeDotnet $dotnetExecutable @('run', '--project', (Join-Path $repoRoot 'tests\Sade.Bootstrap.Tests'), '-c', 'Release', '--', (Join-Path $packageRoot 'sade.dll'), $enginePath)

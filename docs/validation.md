@@ -4,6 +4,23 @@ Checked on Windows with s&box 26.10.27c, the Steam Definitive Edition build 1639
 
 These notes cover v0.2, including the curated spawn menu, pedestrian flesh impacts and car occupant poses.
 
+The unreleased source build adds exterior-world streaming. Installed-game checks
+index 79,664 placements across 209 exterior sections with no failed sections,
+resolve their model references, preserve CJ's house transform and instance materials,
+and reuse the disk metadata cache. Spatial tests cover negative cells, multiple
+viewers, unload hysteresis, large extents and meshes whose vertices are baked into
+world coordinates. The storm drain and ground07 regressions reject local COL at
+the origin; road52 retains convex collision as a prop but uses triangles in the map.
+
+In the Grove Street preview, the reported road52 wall blocked a horizontal ray
+11 units ahead while the render trace was clear. After switching static world
+hulls to surface collision, that same 400-unit ray is clear with the road collider
+enabled. An 86-point ground comparison found no missing physics surfaces. Its
+single remaining mismatch hit a decorative agave visually and the ground underneath
+physically. The former fall-through position hits the storm drain's visible floor.
+These checks cover that neighbourhood, not every street in the game. Water,
+interiors, traffic, distant skyline proxies and generated navigation are pending.
+
 ## Automated checks
 
 `scripts/Release.ps1` runs the format, weapon, aiming, texture, prefab, presentation, vehicle, reader and bootstrap checks before packaging. Set `SADE_GAME_DIR` to the GTA installation directory to include the reader's installed-game checks.

@@ -203,6 +203,7 @@ public sealed partial class GameReader : IGameReader
             provider?.Dispose();
             provider = null;
             loadedContainers.Clear();
+            world = null;
             loadedBanks.Clear();
             legacyCollision = null;
             pedestrianMetadata = null;

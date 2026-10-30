@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Sade.Reader/Sade.Reader.csproj" />
+    <Compile Include="../../src/Sade.Mount/WorldSpatialIndex.cs" Link="WorldSpatialIndex.cs" />
+  </ItemGroup>
+</Project>

@@ -26,6 +26,7 @@ public interface IGameReader : IDisposable
     PedestrianPreset? GetPedestrianPreset(string modelId);
     IReadOnlyList<WeaponData> GetWeapons();
     IReadOnlyList<VehicleData> GetVehicles();
+    WorldData GetWorld();
     string Fingerprint { get; }
 }
 

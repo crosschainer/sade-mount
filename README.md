@@ -70,6 +70,21 @@ Vehicle handling uses the original handling data with an arcade physics adapter.
 
 ## Settings
 
+The source build also includes an experimental streamed San Andreas map. Open
+`mount://sade/maps/san_andreas.scene` in the editor to start at Grove Street.
+`san_andreas_san_fierro.scene` and `san_andreas_las_venturas.scene` use the same
+world with different starting points. These maps are not included in the v0.2 download.
+
+Nearby geometry loads as you move, with smaller props disappearing sooner than
+buildings and terrain. The default viewing distance is 450 metres and collision
+loads within 180 metres. The first visit to an area takes longer while its meshes
+and textures are converted. Streamed static geometry uses detailed triangle
+collision where simple hulls would block streets. Some world-baked meshes also
+need collision derived from their visible surfaces because the retained classic
+collision uses different coordinates. Water, interiors, traffic, distant skyline
+proxies and a generated navigation mesh are not implemented yet.
+Map footsteps currently use the default surface sound; GTA surface types are not mapped yet.
+
 Settings are optional. To override the game location or cache folder, create `mount/sade/sade.json`:
 
 ```json
@@ -82,6 +97,12 @@ Settings are optional. To override the game location or cache folder, create `mo
 ```
 
 The default cache is `%LOCALAPPDATA%\sade-mount\cache`. Restart s&box after changing settings. If an asset cannot load, its source path and the reason appear in the console.
+
+For the experimental map, `WorldViewDistanceMeters`, `WorldCollisionDistanceMeters`,
+`WorldTextureMaxSize` (default 1024), `WorldFrameBudgetMilliseconds` (default 3) and
+`WorldCacheMegabytes` (default 512) control streaming. The cache budget applies to
+unused resources; geometry still in view can exceed it. Individual mesh uploads
+and collision builds can take longer than the frame budget.
 
 ## Building from source
 

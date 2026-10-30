@@ -33,6 +33,7 @@ var tests = new (string Name, Action Run)[]
     ("IFP rejects malformed sizes, types, and times", TestMalformed),
     ("COL2/COL3 authored primitives and reflected triangle winding", TestCollision),
     ("Collision rejects out-of-range offsets and indices", TestBadCollision),
+    ("World-baked geometry replaces displaced local COL without changing aligned meshes", TestBakedCollision),
     ("Binding samples endpoints, preserves reference channels, and removes travel", TestBinding),
     ("Binding catches incompatible and duplicate track assignments", TestBadBinding),
     ("CJ arm helpers retain their bind pose without changing classic torso tracks", TestPlayerHelpers),
@@ -40,6 +41,26 @@ var tests = new (string Name, Action Run)[]
 };
 foreach (var (name, run) in tests) { run(); Console.WriteLine($"PASS {name}"); }
 Console.WriteLine($"{tests.Length} tests passed.");
+
+static void TestBakedCollision()
+{
+    VertexData V(float x, float y, float z) => new(new(x, y, z), Vector3.UnitZ, default, default, Vector4.One, default, default);
+    var part = new MeshPartData("ground", null, [V(250000, 160000, 1000), V(251000, 160000, 1000), V(250000, 161000, 1000)], [0, 1, 2]);
+    var model = new ModelData { Id = "baked", Parts = [part, part with { Lod = 1 }], BoundsMin = new(250000, 160000, 1000), BoundsMax = new(251000, 161000, 1000) };
+    var local = new CollisionData { Vertices = [new(-500, -500, 0), new(500, -500, 0), new(-500, 500, 0)], Indices = [0, 1, 2], Source = "COL" };
+    var fixedCollision = BakedMeshCollision.Resolve(model, local);
+    Equal(fixedCollision.Vertices.Length, 3); Equal(fixedCollision.Indices.Length, 3);
+    NearVector(fixedCollision.Vertices[0], part.Vertices[0].Position);
+    if (!fixedCollision.Source.StartsWith("Derived")) throw new Exception("Derived collision must identify its source.");
+    var aligned = local with { Vertices = part.Vertices.Select(v => v.Position).ToArray() };
+    if (!ReferenceEquals(aligned, BakedMeshCollision.Resolve(model, aligned))) throw new Exception("Aligned authored collision must be retained.");
+    if (!ReferenceEquals(local, BakedMeshCollision.Resolve(model with { BoundsMin = new(-500), BoundsMax = new(500) }, local))) throw new Exception("Ordinary local meshes must retain authored collision.");
+    var convexModel = model with { Collision = new CollisionData { Hulls = [[new(250000, 160000, 1000), new(251000, 160000, 1000), new(250000, 161000, 1000), new(250000, 160000, 2000)]] } };
+    var worldModel = BakedMeshCollision.ForStaticWorld(convexModel);
+    Equal(worldModel.Collision.Hulls.Length, 0); Equal(worldModel.Collision.Indices.Length, 3);
+    Equal(convexModel.Collision.Hulls.Length, 1);
+    Throws<InvalidDataException>(() => BakedMeshCollision.Resolve(model with { Parts = [part with { Indices = [0, 1, 10] }] }, local));
+}
 
 static void TestPacked()
 {

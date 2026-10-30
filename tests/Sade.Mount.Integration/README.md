@@ -1,5 +1,10 @@
 The scripts below are trusted `run_csharp` probes for an editor with the matching mount version installed. CuratedBrowser.cs, CuratedScenery.cs, PedestrianHitFeedback.cs and CarOccupants.cs cover features included in v0.2.
 
+WorldCollision.cs covers the experimental source-build map. Open the Grove Street
+mounted scene and wait for nearby geometry to load. It checks the exact road52
+invisible-wall report, the storm-drain fall-through location and a neighbourhood
+ground grid, without moving the player or changing the scene.
+
 CuratedBrowser.cs audits the mounted registry without decoding models. It checks the 322 curated choices (67 NPCs, 191 vehicles and 64 scenery models) plus the complete static/skeletal source model collection under All, the seven intended folders, CJ/Big Smoke priority, unique paths and agreement between the folder tree and Sandbox's model list. The recursive root list includes both collections. Source weapon models are available through All; legacy aliases and generated loadout/animation variants stay hidden while saved references still resolve. Run it before CuratedScenery.cs when measuring how many models were already decoded during browsing.
 
 CuratedScenery.cs loads all 64 curated buildings, ramps and props in a disposable scene. It checks finite bounds, renderable geometry and nonempty collision, then captures a private overview with each model scaled to fit its own cell. The overview is for reviewing the selection, not for comparing real-world sizes. The active scene and camera are left unchanged.

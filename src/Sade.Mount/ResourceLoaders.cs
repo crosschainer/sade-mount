@@ -9,9 +9,13 @@ internal sealed class TextureLoader(string id) : ResourceLoader<SadeMount>
     protected override object Load()
     {
         var data = Host.Reader.LoadTexture(id);
-        if (data.Mips.Length == 0) throw new InvalidDataException($"{id}: no texture mip data.");
+        return Build(data, Path);
+    }
+    internal static Texture Build(TextureData data, string name)
+    {
+        if (data.Mips.Length == 0) throw new InvalidDataException($"{data.Id}: no texture mip data.");
         var first = data.Mips[0];
-        if (first.Width is < 1 or > short.MaxValue || first.Height is < 1 or > short.MaxValue) throw new InvalidDataException($"{id}: invalid texture dimensions.");
+        if (first.Width is < 1 or > short.MaxValue || first.Height is < 1 or > short.MaxValue) throw new InvalidDataException($"{data.Id}: invalid texture dimensions.");
         var format = data.Format.Replace("PF_", "").ToUpperInvariant() switch
         {
             "DXT1" or "BC1" => ImageFormat.DXT1,
@@ -25,10 +29,10 @@ internal sealed class TextureLoader(string id) : ResourceLoader<SadeMount>
             "R8G8B8A8" or "RGBA8888" or "RGBA8" => data.Srgb ? ImageFormat.RGBA8888 : ImageFormat.RGBA8888_LINEAR,
             "G8" or "R8" => ImageFormat.I8,
             "FLOATRGBA" or "RGBA16F" => ImageFormat.RGBA16161616F,
-            _ => throw new NotSupportedException($"{id}: texture format {data.Format}.")
+            _ => throw new NotSupportedException($"{data.Id}: texture format {data.Format}.")
         };
         var bytes = TextureMipData.Pack(data);
-        return new Texture2DBuilder().WithName(Path).WithSize(first.Width, first.Height).WithFormat(format).WithMips(data.Mips.Length).WithData(bytes).WithStaticUsage().Finish();
+        return new Texture2DBuilder().WithName(name).WithSize(first.Width, first.Height).WithFormat(format).WithMips(data.Mips.Length).WithData(bytes).WithStaticUsage().Finish();
     }
 }
 
@@ -37,15 +41,19 @@ internal sealed class MaterialLoader(string id) : ResourceLoader<SadeMount>
     protected override object Load()
     {
         var data = Host.Reader.LoadMaterial(id);
-        var material = Material.Create(Path, "shaders/sade_surface.shader", false);
-        material.Set("g_tColor", TextureFor(data.ColorTexture, Texture.White));
-        material.Set("g_tNormal", TextureFor(data.NormalTexture, FlatNormal));
-        material.Set("g_tRoughness", TextureFor(data.RoughnessTexture, Texture.White));
-        material.Set("g_tMetalness", TextureFor(data.MetallicTexture, Texture.White));
-        material.Set("g_tPacked", TextureFor(data.PackedTexture, Texture.White));
+        return Build(data, Path, TextureFor);
+    }
+    internal static Material Build(MaterialData data, string name, Func<string?, Texture, Texture> textureFor)
+    {
+        var material = Material.Create(name, "shaders/sade_surface.shader", false);
+        material.Set("g_tColor", textureFor(data.ColorTexture, Texture.White));
+        material.Set("g_tNormal", textureFor(data.NormalTexture, FlatNormal));
+        material.Set("g_tRoughness", textureFor(data.RoughnessTexture, Texture.White));
+        material.Set("g_tMetalness", textureFor(data.MetallicTexture, Texture.White));
+        material.Set("g_tPacked", textureFor(data.PackedTexture, Texture.White));
         material.Set("g_flPackedPbr", data.CharacterPackedLayout && data.UsePackedPbr && data.PackedTexture is not null ? 1f : 0f);
-        material.Set("g_tOpacity", TextureFor(data.OpacityTexture, Texture.White));
-        material.Set("g_tEmissive", TextureFor(data.EmissiveTexture, Texture.Black));
+        material.Set("g_tOpacity", textureFor(data.OpacityTexture, Texture.White));
+        material.Set("g_tEmissive", textureFor(data.EmissiveTexture, Texture.Black));
         material.Set("g_vTint", new Vector4(data.Tint.X, data.Tint.Y, data.Tint.Z, data.Tint.W));
         material.Set("g_flRoughness", data.Roughness);
         material.Set("g_flMetalness", data.Metallic);

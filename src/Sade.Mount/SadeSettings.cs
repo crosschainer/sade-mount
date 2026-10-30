@@ -8,6 +8,11 @@ public sealed record SadeSettings
     public string CacheDirectory { get; init; } = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "sade-mount", "cache");
     public bool RegisterAnimationVariants { get; init; } = true;
     public float LodDistance { get; init; } = 2000;
+    public float WorldViewDistanceMeters { get; init; } = 450;
+    public float WorldCollisionDistanceMeters { get; init; } = 180;
+    public float WorldFrameBudgetMilliseconds { get; init; } = 3;
+    public int WorldTextureMaxSize { get; init; } = 1024;
+    public int WorldCacheMegabytes { get; init; } = 512;
 
     internal static SadeSettings Load()
     {

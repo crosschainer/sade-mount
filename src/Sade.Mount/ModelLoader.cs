@@ -160,7 +160,7 @@ internal sealed class ModelLoader(string id, string? animationId = null, string?
         return new StaticVertex(position, CoordinateSpace.Direction(source.Normal), new Vector4(tangent.x, tangent.y, tangent.z, -source.Tangent.W), new Vector2(source.UV.X, source.UV.Y), new Color32(ToByte(source.Color.X), ToByte(source.Color.Y), ToByte(source.Color.Z), ToByte(source.Color.W)));
     }
     private static byte ToByte(float value) => (byte)Math.Clamp((int)MathF.Round(value * 255), 0, 255);
-    private static void AddCollision(ModelBuilder builder, CollisionData data)
+    internal static void AddCollision(ModelBuilder builder, CollisionData data)
     {
         if (data.Indices.Length > 0) builder.AddCollisionMesh(data.Vertices.Select(CoordinateSpace.Position).ToArray().AsSpan(), CoordinateSpace.Indices(data.Indices).AsSpan());
         foreach (var hull in data.Hulls) if (hull.Length >= 4) builder.AddCollisionHull(hull.Select(CoordinateSpace.Position).ToArray().AsSpan());
