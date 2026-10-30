@@ -8,6 +8,8 @@ internal sealed partial class NativePedestrian
     private ModelPhysics? posePhysics;
     private bool poseSuspended;
     private Vector3? previousPelvis;
+    private int surfacedPoseBodies = -1;
+    private Rigidbody? surfacedFirstBody;
     internal bool IsPosed => GameObject.Tags.Has(PosedMarker, false);
 
     private void InitializePosing()
@@ -38,6 +40,7 @@ internal sealed partial class NativePedestrian
             posePhysics = Renderer.Components.Get<ModelPhysics>(FindMode.EverythingInSelf);
         if (posePhysics is { IsValid: true } physics && physics.Bodies.Count > 1)
         {
+            RestoreFleshSurfaces(physics);
             // The broad navigation capsule would intercept the ray before a limb.
             // Damage still finds NativePedestrian through the bone object's ancestors.
             var capsule = Components.Get<CapsuleCollider>(FindMode.EverythingInSelf);
@@ -79,6 +82,32 @@ internal sealed partial class NativePedestrian
             }
         }
         return true;
+    }
+
+    private void RestoreFleshSurfaces(ModelPhysics physics)
+    {
+        // Old saved poses serialize their generated colliders with the previous generic
+        // surface. Repair those without rebuilding bodies or disturbing frozen limbs.
+        // The first body also detects a rebuilt/replaced rig with the same body count.
+        var first = physics.Bodies[0].Component;
+        if (surfacedPoseBodies == physics.Bodies.Count && surfacedFirstBody == first) return;
+        var flesh = Surface.FindByName("flesh");
+        if (flesh is null) return;
+        var complete = true;
+        foreach (var body in physics.Bodies)
+        {
+            if (!body.Component.IsValid()) { complete = false; continue; }
+            var found = false;
+            foreach (var collider in body.Component.Components.GetAll<Collider>(FindMode.EverythingInSelf))
+            {
+                collider.Surface = flesh;
+                found = true;
+            }
+            complete &= found;
+        }
+        if (!complete) return; // Networked bodies/colliders can arrive in separate updates.
+        surfacedPoseBodies = physics.Bodies.Count;
+        surfacedFirstBody = first;
     }
 
     private void SuspendForPose()

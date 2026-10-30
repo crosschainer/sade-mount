@@ -276,8 +276,13 @@ internal sealed partial class NativePedestrian : Component, Component.IDamageabl
 
     private void EnsureCollider()
     {
-        if (Components.Get<CapsuleCollider>(FindMode.EverythingInSelf) is not null) return;
+        if (Components.Get<CapsuleCollider>(FindMode.EverythingInSelf) is { } existing)
+        {
+            existing.Surface = Surface.FindByName("flesh");
+            return;
+        }
         var collider = Components.Create<CapsuleCollider>();
+        collider.Surface = Surface.FindByName("flesh");
         collider.Flags = ComponentFlags.Hidden | ComponentFlags.NotSaved | ComponentFlags.NotNetworked | ComponentFlags.NotCloned;
         collider.Radius = Math.Clamp(Agent.Radius, 6, 24);
         collider.Start = Vector3.Up * collider.Radius;

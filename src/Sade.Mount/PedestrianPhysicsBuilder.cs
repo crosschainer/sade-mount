@@ -73,10 +73,13 @@ internal static class PedestrianPhysicsBuilder
         var height = (model.BoundsMax.Z - model.BoundsMin.Z) * CoordinateSpace.UnitsPerCentimeter;
         if (!float.IsFinite(height) || height < 8) throw new InvalidDataException($"{model.Id}: invalid pedestrian height.");
         var massScale = 80 / segments.Sum(s => s.Mass);
+        var flesh = Surface.FindByName("flesh");
         for (var i = 0; i < segments.Count; i++)
         {
             var segment = segments[i];
-            var body = builder.AddBody(segment.Mass * massScale, boneName: bones[segment.Bone].Name)
+            // Sandbox chooses both melee audio and blood effects from the trace's
+            // physical surface. A default surface makes these limbs behave like props.
+            var body = builder.AddBody(segment.Mass * massScale, surface: flesh, boneName: bones[segment.Bone].Name)
                 .SetBindPose(bind[i]).SetDamping(.6f, 3f);
             var cloud = points[i];
             if (segment.Kind is "pelvis" or "abdomen" or "chest")
