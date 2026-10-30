@@ -5,7 +5,7 @@ var flags = System.Reflection.BindingFlags.Public | System.Reflection.BindingFla
 var profiles = assembly.GetType("Sade.Mount.VehicleRuntime")!.GetField("profiles", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!.GetValue(null)!;
 var coordinate = assembly.GetType("Sade.Mount.CoordinateSpace")!;
 var active = Game.ActiveScene; var activeCamera = active?.Camera;
-var sourcePlayer = Player.FindLocalPlayer()?.Controller?.Renderer;
+var sourcePlayer = active?.GetAllComponents<PlayerController>().FirstOrDefault(p => p.IsValid && !p.IsProxy)?.Renderer;
 var scene = new Scene();
 var results = new System.Collections.Generic.List<object>();
 var controllers = new System.Collections.Generic.List<Component>();

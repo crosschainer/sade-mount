@@ -18,6 +18,7 @@ internal static class VehicleSeats
     private const float Reach = 90;
     private static readonly Dictionary<NativeVehicle, Seat[]> vehicles = [];
     private static readonly Dictionary<NativeVehicle, BikeRiderPose> riders = [];
+    private static readonly Dictionary<NativeVehicle, CarOccupantPose[]> carOccupants = [];
     private static readonly Dictionary<Scene, SeatControls> scenes = [];
 
     internal static void BuildPrefab(GameObject root, VehicleData data)
@@ -112,6 +113,17 @@ internal static class VehicleSeats
             .ToArray();
         vehicles.Add(vehicle, seats);
         if (BikeRiderPose.Create(vehicle) is { } rider) riders.Add(vehicle, rider);
+        if (VehicleRuntime.TryGetCabin(vehicle.Profile.Data.Id, out var cabin))
+        {
+            var poses = new List<CarOccupantPose>();
+            foreach (var seat in seats)
+            {
+                var pelvis = seat.Chair.GameObject.LocalPosition + Vector3.Up * 22;
+                var fit = cabin.Seats.FirstOrDefault(s => CoordinateSpace.Position(s.Pelvis).Distance(pelvis) < .1f);
+                if (fit is not null) poses.Add(new CarOccupantPose(vehicle, seat.Chair, fit, seat.Driver ? cabin.Steering : null));
+            }
+            carOccupants.Add(vehicle, poses.ToArray());
+        }
         if (!scenes.ContainsKey(vehicle.Scene)) scenes.Add(vehicle.Scene, new SeatControls(vehicle.Scene));
     }
 
@@ -170,6 +182,7 @@ internal static class VehicleSeats
     {
         if (!vehicles.Remove(vehicle, out var seats)) return;
         if (riders.Remove(vehicle, out var rider)) rider.Dispose();
+        if (carOccupants.Remove(vehicle, out var poses)) foreach (var pose in poses) pose.Dispose();
         foreach (var seat in seats)
         {
             var occupant = seat.Chair.IsValid ? seat.Chair.GetOccupant() : null;

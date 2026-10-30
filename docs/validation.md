@@ -2,7 +2,7 @@
 
 Checked on Windows with s&box 26.10.27c, the Steam Definitive Edition build 16391096 and .NET 10. The mount reads the two installed PAK archives; extracted assets are kept out of the repository and release.
 
-These notes include the next update's source-build checks. The public v0.1 release remains unchanged; the curated spawn menu and pedestrian flesh impacts described below are not yet published in a release ZIP.
+These notes include the next update's source-build checks. The public v0.1 release remains unchanged; the curated spawn menu, pedestrian flesh impacts and car occupant poses described below are not yet published in a release ZIP.
 
 ## Automated checks
 
@@ -43,6 +43,8 @@ Pure presentation checks cover exact curated source identities, duplicate menu p
 - A Dodo lost altitude without forward airspeed, turned in the direction of its bank and took off after building speed on a runway. These checks use engine physics with deterministic inputs.
 - Sanchez and BMX stayed upright at rest and leaned into mirrored left/right turns. Their measured vertical speed during flat-ground turns stayed below 9 units per second.
 - All twelve bikes with authored grip sockets fit the Human rider to the saddle and handlebars, including during translation, yaw and lean. The isolated engine check covers palm contact, unchanged arm lengths, clothing and attachment alignment, and restoring the normal pose after exit. NRG-500, Sanchez and BMX were also captured and inspected in engine renders.
+- Car cabin extraction identified 142 steering rims among 147 non-RC road models. It isolates connected rim geometry instead of taking whole-material bounds, including cars whose wheel shares an interior material. Feet use rendered floor triangles rather than the car's enclosing physics hull. Pure tests cover stray trim, missing rims, invisible panels, malformed triangles and invalid rear-seat dummies; installed checks cover thirteen car models and the bus driver's footwell.
+- Infernus, Premier, Banshee, Landstalker, Linerunner, Bus and Savanna passed temporary-scene occupant checks with the Human skeleton. Driver palms and supported-seat ankles follow their targets while the vehicle moves and turns; limb lengths, player/chair transforms and passenger arm poses stay intact. Feet point forward and poses clear after exit. Unsupported bus seats retain their ordinary animation. Infernus and Banshee engine renders were inspected. This does not establish every avatar's fit or multiplayer behavior.
 - E's door-based seat selection passed checks for left/right entry, rotated vehicles, occupied seats, entry distance and bike rider/pillion access from both sides. Driver and passenger entry, seated collision, exit clearance and restored walking also passed the offline seat checks. These exercise the same selection helper as keyboard input without injecting a key press.
 - The Infernus settles at the source suspension equilibrium of 72.7083 cm, with all four rendered tire bottoms on the floor. From 110 km/h it stops in 26.77 m / 1.76 s using the foot brake, or 33.22 m / 2.18 s using the rear handbrake. These are deterministic engine-physics measurements; keyboard feel remains a playtest judgment. The source invisible underbody material also retains its zero opacity.
 
@@ -54,4 +56,4 @@ Multiplayer ownership, replication and passenger behavior have not completed a t
 
 Vehicle dynamics and weapon effects are s&box implementations driven by source data. They are not a reproduction of GTA's complete gameplay simulation.
 
-Bike rider posing requires the Human skeleton and authored grip sockets. Pizzaboy has no grip sockets and keeps the standard seat pose; unsupported player skeletons also keep their own seated animation. Foot placement still uses the standard seat pose. The rider checks use the installed Human model and do not establish fit for every avatar proportion or multiplayer replication.
+Bike rider posing requires the Human skeleton and authored grip sockets. Pizzaboy has no grip sockets and keeps the standard seat pose; bike feet still use the standard seat animation. Car fitting also requires compatible limb bones and verified cabin geometry. Missing wheel or floor targets keep the corresponding ordinary pose. Feltzer's source seat sits above its wheel, so it receives foot placement without forced hand alignment; invalid bus entry/rear-seat dummies are not fitted to the underbody. Car wheels without a separate steering bone remain fixed, and hands follow the actual rim. These checks do not establish fit for every avatar proportion or multiplayer replication.

@@ -21,7 +21,7 @@ When updating, close s&box and replace the `sade` folder with the new release. K
 
 [Release notes and downloads](https://github.com/crosschainer/sade-mount/releases/tag/v0.1)
 
-**Next update — unreleased, available in source builds:** curated folders organize NPCs, vehicles, buildings, ramps and props; **All** exposes the complete source model library. NPC hits gain flesh sounds, blood and wound decals. Saved references still work. The public v0.1 ZIP does not include these changes.
+**Next update — unreleased, available in source builds:** curated folders organize NPCs, vehicles, buildings, ramps and props; **All** exposes the complete source model library. NPC hits gain flesh sounds, blood and wound decals. Car drivers grip the steering wheel, with occupants' feet fitted into supported cabins. Saved references still work. The public v0.1 ZIP does not include these changes.
 
 ![An Infernus, NRG-500 and street props spawned in Sandbox](docs/images/sandbox-vehicles-and-props.png)
 

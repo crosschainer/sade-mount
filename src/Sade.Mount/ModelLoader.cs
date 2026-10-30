@@ -14,6 +14,7 @@ internal sealed class ModelLoader(string id, string? animationId = null, string?
         if (id.Equals(PlayerOutfit.ModelId, StringComparison.OrdinalIgnoreCase))
             data = PlayerOutfit.Dress(data, Host.GetModelData(PlayerOutfit.VestId), Host.GetModelData(PlayerOutfit.JeansId));
         var vehicle = Host.Reader.GetVehicles().FirstOrDefault(v => v.ModelId.Equals(id, StringComparison.OrdinalIgnoreCase));
+        if (vehicle is not null) VehicleRuntime.RegisterCabin(vehicle, data);
         if (previewWheels && vehicle?.WheelModelId is { } wheelId)
             data = VehiclePreviewGeometry.Assemble(data, Host.GetModelData(wheelId), vehicle);
         if (data.Parts.Length == 0) throw new InvalidDataException($"{id} contains no render geometry.");

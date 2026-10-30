@@ -3,6 +3,7 @@ using Sade.Reader;
 using Sade.Contracts;
 
 void Require(bool condition, string message) { if (!condition) throw new Exception(message); }
+CabinGeometryChecks.Run();
 Require(VehicleDriving.Axis(true, false, 0) == 1, "W must give positive collective even when seated movement is zero.");
 Require(VehicleDriving.Axis(false, true, 1) == -1, "Physical S must override stale positive walking input.");
 Require(VehicleDriving.Axis(true, true, 1) == 0, "Opposite physical controls must cancel.");
@@ -70,6 +71,7 @@ if (args.Contains("--installed"))
     Require(Math.Abs(infernus.BrakeBias - .51f) < .00001f && infernus.SuspensionUpper == 25 && infernus.SuspensionLower == -10,
         "Installed handling.cfg brake bias and signed suspension limits were parsed incorrectly.");
     Console.WriteLine("PASS source masked vehicle transparency, unchanged character tint, and Infernus suspension/brake metadata.");
+    CabinGeometryChecks.RunInstalled(reader);
     var ids = catalog.Where(x => x.Kind == AssetKind.Sound).Select(x => x.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
     var loaded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     var count = 0;

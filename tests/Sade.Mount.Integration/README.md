@@ -16,6 +16,8 @@ VehicleSeats.cs checks the door selection used by E: left driver/right passenger
 
 BikeRiders.cs checks all 12 bikes with authored grips: palm and saddle alignment, preserved arm lengths, clothing and bone attachments while moving and turning, and pose restoration after exit. It captures private engine renders of NRG500, Sanchez and BMX without changing the active scene or camera. Rider fitting has been tested with the Human avatar only.
 
+CarOccupants.cs checks seven mounted car/truck/bus models in a disposable scene: driver palm contact, ankle targets, forward-facing feet, preserved limb lengths, unchanged player/chair/renderer transforms and normal animation after exit. Passenger arms remain in the ordinary seated pose. Unsupported floor targets are reported separately and checked for unchanged animation. It captures Infernus and Banshee renders; clothing checks run when an active avatar supplies clothing. This validates local Human poses, not input or multiplayer replication.
+
 VehiclePresentation.cs runs the real native Tick with seated temporary players for a car, motorcycle, boat, plane and helicopter. It checks engine sound handles, decodes their actual engine-side samples to reject silence, and confirms rendered helicopter rotor bones rotate. This validates resource playback and presentation, not perceived volume or wall-clock loop persistence in the active map.
 
 VehicleAudioLifecycle.cs checks an Infernus loop across 3.5 real seconds with a temporary listener first in the driver seat and then outside. It rejects handle restarts and checks the actual acoustic model does not mute the engine through the car's own hull. The listener and car live in a disposable scene; no active-map objects are changed.

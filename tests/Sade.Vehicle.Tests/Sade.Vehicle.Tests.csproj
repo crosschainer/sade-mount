@@ -3,6 +3,7 @@
   <ItemGroup>
     <Compile Include="../../src/Sade.Mount/VehicleDriving.cs" Link="VehicleDriving.cs" />
     <Compile Include="../../src/Sade.Mount/VehicleAudioBanks.cs" Link="VehicleAudioBanks.cs" />
+    <Compile Include="../../src/Sade.Mount/VehicleCabinGeometry.cs" Link="VehicleCabinGeometry.cs" />
     <ProjectReference Include="../../src/Sade.Reader/Sade.Reader.csproj" />
   </ItemGroup>
 </Project>

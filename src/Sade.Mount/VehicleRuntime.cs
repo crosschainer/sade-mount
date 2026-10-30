@@ -11,12 +11,20 @@ internal static class VehicleRuntime
     internal const string Marker = "sade_vehicle";
     internal sealed record Profile(VehicleData Data, string ModelPath, string? WheelModelPath);
     private static readonly ConcurrentDictionary<string, Profile> profiles = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly ConcurrentDictionary<string, VehicleCabinData> cabins = new(StringComparer.OrdinalIgnoreCase);
     private static readonly Sandbox.Diagnostics.Logger Log = new("SADE vehicles");
     private static Session? current;
     internal static void Register(string modelPath, Profile profile) => profiles[Normalize(modelPath)] = profile;
+    internal static void RegisterCabin(VehicleData vehicle, ModelData model)
+    {
+        // Fit only decoded vehicles. Browsing the catalog must not load cabin geometry.
+        if (vehicle.Family != "road" || cabins.ContainsKey(vehicle.Id)) return;
+        if (VehicleCabinGeometry.Create(model, vehicle) is { } cabin) cabins.TryAdd(vehicle.Id, cabin);
+    }
+    internal static bool TryGetCabin(string id, out VehicleCabinData cabin) => cabins.TryGetValue(id, out cabin!);
     private static string Normalize(string path) => path.Replace('\\', '/').Trim();
     internal static void Start() { if (current is null) { current = new Session(); current.Start(); } }
-    internal static void Stop() { Interlocked.Exchange(ref current, null)?.Stop(); profiles.Clear(); }
+    internal static void Stop() { Interlocked.Exchange(ref current, null)?.Stop(); profiles.Clear(); cabins.Clear(); }
 
     internal static void BuildPrefabWheels(GameObject root, Profile profile)
     {
